@@ -1,0 +1,21 @@
+[gd_scene format=3 uid="uid://attacktrail_scene"]
+; 攻击拖尾粒子：蓝白色弧形散射，attached 到 AttackArea
+
+[sub_resource type="ParticleProcessMaterial" id="PPM_trail"]
+direction = Vector3(0, -1, 0)
+spread = 80.0
+initial_velocity_min = 30.0
+initial_velocity_max = 110.0
+gravity = Vector3(0, 120, 0)
+scale_min = 2.5
+scale_max = 5.0
+color = Color(0.4, 0.75, 1.0, 0.85)
+
+[node name="AttackTrail" type="GPUParticles2D"]
+emitting = false
+amount = 16
+lifetime = 0.3
+one_shot = true
+explosiveness = 0.8
+process_material = SubResource("PPM_trail")
+visibility_rect = Rect2(-50, -50, 100, 100)

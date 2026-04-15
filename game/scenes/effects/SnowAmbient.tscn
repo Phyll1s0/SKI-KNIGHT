@@ -1,0 +1,21 @@
+[gd_scene format=3 uid="uid://snowambient_scene"]
+; 场景环境雪花粒子（附着在 CanvasLayer 上，循环播放）
+
+[sub_resource type="ParticleProcessMaterial" id="PPM_snow"]
+direction = Vector3(0.3, 1, 0)
+spread = 18.0
+initial_velocity_min = 35.0
+initial_velocity_max = 90.0
+gravity = Vector3(0, 60, 0)
+scale_min = 2.0
+scale_max = 4.5
+color = Color(0.88, 0.93, 1.0, 0.75)
+
+[node name="SnowAmbient" type="GPUParticles2D"]
+emitting = true
+amount = 80
+lifetime = 8.0
+one_shot = false
+explosiveness = 0.0
+process_material = SubResource("PPM_snow")
+visibility_rect = Rect2(-640, -100, 1280, 820)

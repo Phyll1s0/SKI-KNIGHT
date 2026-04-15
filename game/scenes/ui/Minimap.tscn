@@ -1,0 +1,26 @@
+[gd_scene format=3 uid="uid://minimap_scene"]
+
+[ext_resource type="Script" path="res://scripts/ui/Minimap.gd" id="1"]
+
+[sub_resource type="StyleBoxFlat" id="Style_panel"]
+bg_color = Color(0.0, 0.0, 0.0, 0.0)
+border_color = Color(0.5, 0.7, 1.0, 0.0)
+
+[node name="Minimap" type="CanvasLayer"]
+layer = 10
+script = ExtResource("1")
+
+[node name="Panel" type="Panel" parent="."]
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -190.0
+offset_top = 8.0
+offset_right = -10.0
+offset_bottom = 128.0
+theme_override_styles/panel = SubResource("Style_panel")
+
+[node name="DrawArea" type="Control" parent="Panel"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0

@@ -1,0 +1,33 @@
+[gd_scene format=3 uid="uid://skillgate_scene"]
+
+[ext_resource type="Script" path="res://scripts/systems/SkillGate.gd" id="1"]
+
+[sub_resource type="RectangleShape2D" id="Shape_trigger"]
+size = Vector2(40, 120)
+
+[sub_resource type="RectangleShape2D" id="Shape_block"]
+size = Vector2(40, 120)
+
+[node name="SkillGate" type="Area2D"]
+script = ExtResource("1")
+collision_layer = 0
+collision_mask = 2
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("Shape_trigger")
+
+[node name="BlockCollision" type="CollisionShape2D" parent="."]
+shape = SubResource("Shape_block")
+
+[node name="Sprite2D" type="Sprite2D" parent="."]
+position = Vector2(0, -82)
+# 接入：assets/sprites/ui/skill_gate.png
+
+[node name="HintLabel" type="Label" parent="."]
+position = Vector2(-60, -70)
+text = "需要技能"
+theme_override_font_sizes/font_size = 13
+theme_override_colors/font_color = Color(1.0, 0.5, 0.2, 1.0)
+visible = false
+
+[connection signal="body_entered" from="." to="." method="_on_body_entered"]

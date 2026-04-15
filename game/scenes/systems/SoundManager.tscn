@@ -1,0 +1,34 @@
+[gd_scene format=3 uid="uid://soundmanager_scene"]
+
+[ext_resource type="Script" path="res://autoload/SoundManager.gd" id="1"]
+
+[node name="SoundManager" type="Node"]
+script = ExtResource("1")
+
+[node name="PlayerAttack" type="AudioStreamPlayer" parent="."]
+volume_db = 0.0
+
+[node name="PlayerHurt" type="AudioStreamPlayer" parent="."]
+volume_db = 0.0
+
+[node name="PlayerJump" type="AudioStreamPlayer" parent="."]
+volume_db = -3.0
+
+[node name="EnemyHurt" type="AudioStreamPlayer" parent="."]
+volume_db = -2.0
+
+[node name="EnemyDie" type="AudioStreamPlayer" parent="."]
+volume_db = 0.0
+
+[node name="SkillIceBlade" type="AudioStreamPlayer" parent="."]
+volume_db = 2.0
+
+[node name="Portal" type="AudioStreamPlayer" parent="."]
+volume_db = -1.0
+
+[node name="Pickup" type="AudioStreamPlayer" parent="."]
+volume_db = 0.0
+
+[node name="Music" type="AudioStreamPlayer" parent="."]
+volume_db = -6.0
+bus = "Music"

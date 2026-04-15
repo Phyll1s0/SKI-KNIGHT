@@ -1,0 +1,167 @@
+[gd_scene format=3 uid="uid://glaciermaze_scene"]
+
+[ext_resource type="PackedScene" path="res://scenes/player/Player.tscn" id="1"]
+[ext_resource type="Script" path="res://scripts/systems/GlacierMaze.gd" id="2"]
+[ext_resource type="PackedScene" path="res://scenes/ui/HUD.tscn" id="3"]
+[ext_resource type="PackedScene" path="res://scenes/enemies/SnowmanSoldier.tscn" id="4"]
+[ext_resource type="PackedScene" path="res://scenes/enemies/IceTurret.tscn" id="5"]
+[ext_resource type="PackedScene" path="res://scenes/systems/Portal.tscn" id="6"]
+[ext_resource type="PackedScene" path="res://scenes/systems/EquipmentPickup.tscn" id="7"]
+[ext_resource type="Script" path="res://scripts/systems/SpawnPoint.gd" id="8"]
+[ext_resource type="PackedScene" path="res://scenes/systems/SavePoint.tscn" id="9"]
+[ext_resource type="PackedScene" path="res://scenes/systems/SkillPickup.tscn" id="10"]
+
+; ── Physics shapes ──────────────────────────────────────────────────────
+[sub_resource type="RectangleShape2D" id="Shape_floor"]
+size = Vector2(2000, 40)
+
+[sub_resource type="PhysicsMaterial" id="PhysMat_ice"]
+friction = 0.05
+bounce = 0.0
+
+[sub_resource type="RectangleShape2D" id="Shape_ice_floor"]
+size = Vector2(600, 20)
+
+[sub_resource type="RectangleShape2D" id="Shape_wall_l"]
+size = Vector2(40, 600)
+
+[sub_resource type="RectangleShape2D" id="Shape_wall_r"]
+size = Vector2(40, 600)
+
+[sub_resource type="RectangleShape2D" id="Shape_plat_a"]
+size = Vector2(200, 20)
+
+[sub_resource type="RectangleShape2D" id="Shape_plat_b"]
+size = Vector2(180, 20)
+
+[sub_resource type="RectangleShape2D" id="Shape_plat_c"]
+size = Vector2(160, 20)
+
+[sub_resource type="ConvexPolygonShape2D" id="Shape_slope1"]
+points = PackedVector2Array(0, 0, 400, 0, 0, -200)
+
+[sub_resource type="ConvexPolygonShape2D" id="Shape_slope2"]
+points = PackedVector2Array(0, 0, 300, 0, 300, -180)
+
+[sub_resource type="RectangleShape2D" id="Shape_upper_floor"]
+size = Vector2(800, 20)
+
+; ── Root ────────────────────────────────────────────────────────────────
+[node name="GlacierMaze" type="Node2D"]
+script = ExtResource("2")
+
+; ── HUD ─────────────────────────────────────────────────────────────────
+[node name="HUD" parent="." instance=ExtResource("3")]
+
+; ── Spawn points ──────────────────────────────────────────────────────--
+[node name="DefaultSpawn" type="Marker2D" parent="."]
+position = Vector2(120, 600)
+script = ExtResource("8")
+point_name = "DefaultSpawn"
+
+[node name="SpawnFromBlizzard" type="Marker2D" parent="."]
+position = Vector2(1850, 300)
+script = ExtResource("8")
+point_name = "FromBlizzard"
+
+; ── Player ──────────────────────────────────────────────────────────────
+[node name="Player" parent="." instance=ExtResource("1")]
+position = Vector2(120, 600)
+
+; ── Main floor ──────────────────────────────────────────────────────────
+[node name="FloorMain" type="StaticBody2D" parent="."]
+position = Vector2(1000, 820)
+[node name="Col" type="CollisionShape2D" parent="FloorMain"]
+shape = SubResource("Shape_floor")
+
+; ── Ice floor (slippery section center) ────────────────────────────────
+[node name="IceFloor" type="StaticBody2D" parent="."]
+position = Vector2(900, 780)
+physics_material_override = SubResource("PhysMat_ice")
+[node name="Col" type="CollisionShape2D" parent="IceFloor"]
+shape = SubResource("Shape_ice_floor")
+
+; ── Walls ────────────────────────────────────────────────────────────---
+[node name="WallLeft" type="StaticBody2D" parent="."]
+position = Vector2(20, 500)
+[node name="Col" type="CollisionShape2D" parent="WallLeft"]
+shape = SubResource("Shape_wall_l")
+
+[node name="WallRight" type="StaticBody2D" parent="."]
+position = Vector2(1980, 500)
+[node name="Col" type="CollisionShape2D" parent="WallRight"]
+shape = SubResource("Shape_wall_r")
+
+; ── Slopes ──────────────────────────────────────────────────────────────
+[node name="Slope1" type="StaticBody2D" parent="."]
+position = Vector2(200, 800)
+[node name="Col" type="CollisionShape2D" parent="Slope1"]
+shape = SubResource("Shape_slope1")
+
+[node name="Slope2" type="StaticBody2D" parent="."]
+position = Vector2(1200, 800)
+[node name="Col" type="CollisionShape2D" parent="Slope2"]
+shape = SubResource("Shape_slope2")
+
+; ── Upper platforms (high path) ─────────────────────────────────────────
+[node name="PlatA" type="StaticBody2D" parent="."]
+position = Vector2(500, 580)
+[node name="Col" type="CollisionShape2D" parent="PlatA"]
+shape = SubResource("Shape_plat_a")
+
+[node name="PlatB" type="StaticBody2D" parent="."]
+position = Vector2(850, 460)
+[node name="Col" type="CollisionShape2D" parent="PlatB"]
+shape = SubResource("Shape_plat_b")
+
+[node name="PlatC" type="StaticBody2D" parent="."]
+position = Vector2(1150, 360)
+[node name="Col" type="CollisionShape2D" parent="PlatC"]
+shape = SubResource("Shape_plat_c")
+
+[node name="UpperFloor" type="StaticBody2D" parent="."]
+position = Vector2(1400, 300)
+[node name="Col" type="CollisionShape2D" parent="UpperFloor"]
+shape = SubResource("Shape_upper_floor")
+
+; ── Enemies ─────────────────────────────────────────────────────────────
+[node name="Snowman1" parent="." instance=ExtResource("4")]
+position = Vector2(400, 780)
+[node name="Snowman2" parent="." instance=ExtResource("4")]
+position = Vector2(700, 780)
+[node name="Snowman3" parent="." instance=ExtResource("4")]
+position = Vector2(1500, 780)
+[node name="Turret1" parent="." instance=ExtResource("5")]
+position = Vector2(960, 758)
+[node name="Turret2" parent="." instance=ExtResource("5")]
+position = Vector2(1700, 758)
+
+; ── Equipment pickup (头盔在高路线平台C上) ─────────────────────────────
+[node name="HelmetPickup" parent="." instance=ExtResource("7")]
+position = Vector2(1150, 326)
+slot = 0
+level = 1
+label_text = "头盔"
+
+; ── Portals ─────────────────────────────────────────────────────────────
+; 左侧出口 → 回到测试地图（雪山入口）
+[node name="PortalBack" parent="." instance=ExtResource("6")]
+position = Vector2(40, 750)
+target_scene = "res://scenes/maps/TestMap.tscn"
+spawn_point_name = "DefaultSpawn"
+
+; 右侧出口 → 暴风雪高地（需要雪服 Gate 拦截，在 Phase 3 后期加完整地图）
+[node name="PortalToBlizzard" parent="." instance=ExtResource("6")]
+position = Vector2(1960, 250)
+target_scene = "res://scenes/maps/BlizzardHighlands.tscn"
+spawn_point_name = "DefaultSpawn"
+
+; ── 存档点 ────────────────────────────────────────────────────────────────
+[node name="SavePoint1" parent="." instance=ExtResource("9")]
+position = Vector2(600, 780)
+
+; ── 冰刃投掷技能宝箱（高路线隐藏房间，平台C上方）─────────────────
+[node name="IceBladePickup" parent="." instance=ExtResource("10")]
+position = Vector2(1150, 290)
+skill = 0
+label_text = "冰刃投掷解锁！"

@@ -1,0 +1,68 @@
+[gd_scene format=3 uid="uid://snowking_boss"]
+
+[ext_resource type="Script" path="res://scripts/enemies/SnowKing.gd" id="1"]
+
+[sub_resource type="RectangleShape2D" id="Shape_body"]
+size = Vector2(52, 72)
+
+[sub_resource type="RectangleShape2D" id="Shape_charge"]
+size = Vector2(64, 56)
+
+[sub_resource type="RectangleShape2D" id="Shape_slam"]
+size = Vector2(320, 28)
+
+[sub_resource type="RectangleShape2D" id="Shape_wind"]
+size = Vector2(280, 80)
+
+[sub_resource type="CircleShape2D" id="Shape_detect"]
+radius = 600.0
+
+[node name="SnowKing" type="CharacterBody2D" groups=["enemy"]]
+script = ExtResource("1")
+
+[node name="Sprite2D" type="Sprite2D" parent="."]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("Shape_body")
+
+[node name="Muzzle" type="Marker2D" parent="."]
+position = Vector2(30, -10)
+
+[node name="ChargeArea" type="Area2D" parent="."]
+position = Vector2(38, 0)
+monitoring = false
+collision_layer = 0
+collision_mask = 1
+
+[node name="ChargeCollision" type="CollisionShape2D" parent="ChargeArea"]
+shape = SubResource("Shape_charge")
+
+[node name="SlamArea" type="Area2D" parent="."]
+position = Vector2(0, 20)
+monitoring = false
+collision_layer = 0
+collision_mask = 1
+
+[node name="SlamCollision" type="CollisionShape2D" parent="SlamArea"]
+shape = SubResource("Shape_slam")
+
+[node name="WindArea" type="Area2D" parent="."]
+monitoring = false
+collision_layer = 0
+collision_mask = 1
+
+[node name="WindCollision" type="CollisionShape2D" parent="WindArea"]
+shape = SubResource("Shape_wind")
+
+[node name="DetectArea" type="Area2D" parent="."]
+collision_layer = 0
+collision_mask = 1
+
+[node name="DetectCollision" type="CollisionShape2D" parent="DetectArea"]
+shape = SubResource("Shape_detect")
+
+[connection signal="body_entered" from="ChargeArea" to="." method="_on_charge_area_body_entered"]
+[connection signal="body_entered" from="SlamArea" to="." method="_on_slam_area_body_entered"]
+[connection signal="body_entered" from="WindArea" to="." method="_on_wind_area_body_entered"]
+[connection signal="body_entered" from="DetectArea" to="." method="_on_detect_area_body_entered"]
+[connection signal="body_exited" from="DetectArea" to="." method="_on_detect_area_body_exited"]

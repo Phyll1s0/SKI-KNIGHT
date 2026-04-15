@@ -1,0 +1,250 @@
+[gd_scene format=3 uid="uid://shop_scene"]
+
+[ext_resource type="Script" path="res://scripts/systems/Shop.gd" id="1"]
+
+[sub_resource type="CircleShape2D" id="Shape_range"]
+radius = 60.0
+
+[sub_resource type="StyleBoxFlat" id="Style_panel"]
+bg_color = Color(0.07, 0.10, 0.18, 0.94)
+border_color = Color(0.4, 0.70, 1.0, 0.85)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+
+[sub_resource type="StyleBoxFlat" id="Style_btn"]
+bg_color = Color(0.18, 0.38, 0.70, 1.0)
+border_color = Color(0.5, 0.75, 1.0, 0.8)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+
+[sub_resource type="StyleBoxFlat" id="Style_btn_hover"]
+bg_color = Color(0.28, 0.52, 0.90, 1.0)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+
+[sub_resource type="StyleBoxFlat" id="Style_btn_disabled"]
+bg_color = Color(0.15, 0.18, 0.25, 1.0)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+
+; ══════════════════════════════════════════════════════════════════
+[node name="Shop" type="Area2D"]
+script = ExtResource("1")
+collision_layer = 0
+collision_mask = 2
+
+; ── NPC 外形（简单冰蓝色商人轮廓）──────────────────────────────
+; 身体
+[node name="Body" type="Polygon2D" parent="."]
+polygon = PackedVector2Array(-10, 0, 10, 0, 12, -28, -12, -28)
+color = Color(0.45, 0.65, 0.90, 1.0)
+
+; 头部
+[node name="Head" type="Polygon2D" parent="."]
+position = Vector2(0, -36)
+polygon = PackedVector2Array(-9, -9, 9, -9, 9, 9, -9, 9)
+color = Color(0.55, 0.75, 0.95, 1.0)
+
+; 帽子
+[node name="Hat" type="Polygon2D" parent="."]
+polygon = PackedVector2Array(-11, -46, 11, -46, 8, -62, -8, -62)
+color = Color(0.22, 0.40, 0.72, 1.0)
+
+; 帽子顶部横边
+[node name="HatBrim" type="Polygon2D" parent="."]
+polygon = PackedVector2Array(-14, -46, 14, -46, 14, -43, -14, -43)
+color = Color(0.30, 0.55, 0.88, 1.0)
+
+; ── 交互提示（进入范围才显示）──────────────────────────────────
+[node name="PromptLabel" type="Label" parent="."]
+position = Vector2(-32, -88)
+text = "[F] 购物"
+theme_override_colors/font_color = Color(1.0, 0.9, 0.3, 1.0)
+theme_override_colors/font_shadow_color = Color(0.0, 0.0, 0.0, 1.0)
+theme_override_constants/shadow_offset_x = 1
+theme_override_constants/shadow_offset_y = 1
+theme_override_font_sizes/font_size = 14
+visible = false
+
+; ── 碰撞范围 ────────────────────────────────────────────────────
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("Shape_range")
+
+; ══════════════════════════════════════════════════════════════════
+; SHOP PANEL（CanvasLayer 保证 UI 始终在最前）
+; ══════════════════════════════════════════════════════════════════
+[node name="ShopCanvas" type="CanvasLayer" parent="."]
+layer = 20
+
+[node name="ShopPanel" type="Panel" parent="ShopCanvas"]
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -180.0
+offset_top = -195.0
+offset_right = 180.0
+offset_bottom = 195.0
+visible = false
+theme_override_styles/panel = SubResource("Style_panel")
+
+; 但脚本通过父节点访问 ShopPanel，需要在 Area2D 下也暴露一个引用
+; 实际上脚本用 $ShopPanel，所以需要把 ShopPanel 也放在 Area2D 下作为别名
+; → 改用 NodePath 或直接在 Area2D 下放 Panel（不用 CanvasLayer，
+;    玩家接近时才显示，不影响游戏世界坐标）
+
+[node name="VBox" type="VBoxContainer" parent="ShopCanvas/ShopPanel"]
+anchor_right = 1.0
+anchor_bottom = 1.0
+theme_override_constants/separation = 8
+offset_left = 12
+offset_top = 10
+offset_right = -12
+offset_bottom = -10
+
+; 标题
+[node name="Title" type="Label" parent="ShopCanvas/ShopPanel/VBox"]
+text = "⚒  冰川迷宫·铁匠商人"
+theme_override_colors/font_color = Color(0.7, 0.92, 1.0, 1.0)
+theme_override_font_sizes/font_size = 15
+horizontal_alignment = 1
+
+; 金币显示
+[node name="GoldRow" type="HBoxContainer" parent="ShopCanvas/ShopPanel/VBox"]
+theme_override_constants/separation = 6
+
+[node name="GoldIcon" type="Label" parent="ShopCanvas/ShopPanel/VBox/GoldRow"]
+text = "◆ 持有金币:"
+theme_override_colors/font_color = Color(1.0, 0.82, 0.1, 1.0)
+theme_override_font_sizes/font_size = 13
+
+[node name="GoldAmount" type="Label" parent="ShopCanvas/ShopPanel/VBox/GoldRow"]
+text = "0 G"
+theme_override_colors/font_color = Color(1.0, 0.92, 0.35, 1.0)
+theme_override_font_sizes/font_size = 13
+
+; 分割线
+[node name="Sep" type="HSeparator" parent="ShopCanvas/ShopPanel/VBox"]
+
+; ── 头盔行 ───────────────────────────────────────────────────
+[node name="HelmetRow" type="HBoxContainer" parent="ShopCanvas/ShopPanel/VBox"]
+theme_override_constants/separation = 8
+
+[node name="NameLbl" type="Label" parent="ShopCanvas/ShopPanel/VBox/HelmetRow"]
+text = "🪖 头盔"
+custom_minimum_size = Vector2(80, 0)
+theme_override_colors/font_color = Color(0.9, 0.9, 0.9, 1.0)
+theme_override_font_sizes/font_size = 13
+
+[node name="StatusLbl" type="Label" parent="ShopCanvas/ShopPanel/VBox/HelmetRow"]
+text = "60 G"
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.75, 0.88, 1.0, 1.0)
+theme_override_font_sizes/font_size = 12
+
+[node name="BuyBtn" type="Button" parent="ShopCanvas/ShopPanel/VBox/HelmetRow"]
+text = "购买"
+custom_minimum_size = Vector2(52, 0)
+theme_override_styles/normal = SubResource("Style_btn")
+theme_override_styles/hover = SubResource("Style_btn_hover")
+theme_override_styles/disabled = SubResource("Style_btn_disabled")
+
+; ── 高级雪服行 ───────────────────────────────────────────────
+[node name="SuitRow" type="HBoxContainer" parent="ShopCanvas/ShopPanel/VBox"]
+theme_override_constants/separation = 8
+
+[node name="NameLbl" type="Label" parent="ShopCanvas/ShopPanel/VBox/SuitRow"]
+text = "🧥 高级雪服"
+custom_minimum_size = Vector2(80, 0)
+theme_override_colors/font_color = Color(0.9, 0.9, 0.9, 1.0)
+theme_override_font_sizes/font_size = 13
+
+[node name="StatusLbl" type="Label" parent="ShopCanvas/ShopPanel/VBox/SuitRow"]
+text = "100 G"
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.75, 0.88, 1.0, 1.0)
+theme_override_font_sizes/font_size = 12
+
+[node name="BuyBtn" type="Button" parent="ShopCanvas/ShopPanel/VBox/SuitRow"]
+text = "合成"
+custom_minimum_size = Vector2(52, 0)
+theme_override_styles/normal = SubResource("Style_btn")
+theme_override_styles/hover = SubResource("Style_btn_hover")
+theme_override_styles/disabled = SubResource("Style_btn_disabled")
+
+; ── 升级雪板行 ───────────────────────────────────────────────
+[node name="BoardRow" type="HBoxContainer" parent="ShopCanvas/ShopPanel/VBox"]
+theme_override_constants/separation = 8
+
+[node name="NameLbl" type="Label" parent="ShopCanvas/ShopPanel/VBox/BoardRow"]
+text = "🎿 升级雪板"
+custom_minimum_size = Vector2(80, 0)
+theme_override_colors/font_color = Color(0.9, 0.9, 0.9, 1.0)
+theme_override_font_sizes/font_size = 13
+
+[node name="StatusLbl" type="Label" parent="ShopCanvas/ShopPanel/VBox/BoardRow"]
+text = "150 G"
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.75, 0.88, 1.0, 1.0)
+theme_override_font_sizes/font_size = 12
+
+[node name="BuyBtn" type="Button" parent="ShopCanvas/ShopPanel/VBox/BoardRow"]
+text = "升级"
+custom_minimum_size = Vector2(52, 0)
+theme_override_styles/normal = SubResource("Style_btn")
+theme_override_styles/hover = SubResource("Style_btn_hover")
+theme_override_styles/disabled = SubResource("Style_btn_disabled")
+
+; ── 雪镜二级行 ───────────────────────────────────────────────
+[node name="GogglesRow" type="HBoxContainer" parent="ShopCanvas/ShopPanel/VBox"]
+theme_override_constants/separation = 8
+
+[node name="NameLbl" type="Label" parent="ShopCanvas/ShopPanel/VBox/GogglesRow"]
+text = "🥽 雪镜 Lv.2"
+custom_minimum_size = Vector2(80, 0)
+theme_override_colors/font_color = Color(0.9, 0.9, 0.9, 1.0)
+theme_override_font_sizes/font_size = 13
+
+[node name="StatusLbl" type="Label" parent="ShopCanvas/ShopPanel/VBox/GogglesRow"]
+text = "80 G"
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.75, 0.88, 1.0, 1.0)
+theme_override_font_sizes/font_size = 12
+
+[node name="BuyBtn" type="Button" parent="ShopCanvas/ShopPanel/VBox/GogglesRow"]
+text = "升级"
+custom_minimum_size = Vector2(52, 0)
+theme_override_styles/normal = SubResource("Style_btn")
+theme_override_styles/hover = SubResource("Style_btn_hover")
+theme_override_styles/disabled = SubResource("Style_btn_disabled")
+
+; ── 关闭提示 ─────────────────────────────────────────────────
+[node name="CloseTip" type="Label" parent="ShopCanvas/ShopPanel/VBox"]
+text = "[ F ] 开/关   [ Esc ] 关闭"
+horizontal_alignment = 1
+theme_override_colors/font_color = Color(0.5, 0.55, 0.6, 0.8)
+theme_override_font_sizes/font_size = 11
+
+; ── 信号连接 ─────────────────────────────────────────────────
+[connection signal="body_entered" from="." to="." method="_on_body_entered"]
+[connection signal="body_exited"  from="." to="." method="_on_body_exited"]
+[connection signal="pressed" from="ShopCanvas/ShopPanel/VBox/HelmetRow/BuyBtn"  to="." method="_on_buy_helmet"]
+[connection signal="pressed" from="ShopCanvas/ShopPanel/VBox/SuitRow/BuyBtn"    to="." method="_on_buy_suit"]
+[connection signal="pressed" from="ShopCanvas/ShopPanel/VBox/BoardRow/BuyBtn"   to="." method="_on_buy_board"]
+[connection signal="pressed" from="ShopCanvas/ShopPanel/VBox/GogglesRow/BuyBtn" to="." method="_on_buy_goggles"]

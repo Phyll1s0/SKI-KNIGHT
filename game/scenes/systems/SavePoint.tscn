@@ -1,0 +1,23 @@
+[gd_scene format=3 uid="uid://savepoint_scene"]
+
+[ext_resource type="Script" path="res://scripts/systems/SavePoint.gd" id="1"]
+
+[sub_resource type="CircleShape2D" id="Shape_trigger"]
+radius = 30.0
+
+[node name="SavePoint" type="Area2D"]
+script = ExtResource("1")
+collision_layer = 0
+collision_mask = 2
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("Shape_trigger")
+
+[node name="SavedLabel" type="Label" parent="."]
+position = Vector2(-22, -30)
+text = "★ 复活点"
+theme_override_colors/font_color = Color(1.0, 0.9, 0.3, 1.0)
+theme_override_font_sizes/font_size = 12
+visible = false
+
+[connection signal="body_entered" from="." to="." method="_on_body_entered"]

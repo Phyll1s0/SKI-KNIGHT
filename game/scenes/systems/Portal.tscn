@@ -1,0 +1,37 @@
+[gd_scene format=3 uid="uid://portal_scene"]
+
+[ext_resource type="Script" path="res://scripts/systems/Portal.gd" id="1"]
+
+[sub_resource type="RectangleShape2D" id="Shape_trigger"]
+size = Vector2(24, 48)
+
+[node name="Portal" type="Area2D"]
+script = ExtResource("1")
+collision_layer = 0
+collision_mask = 2
+
+; ── 外圈光环（椭圆轮廓，脉冲动画目标节点）──────────────────────
+[node name="PortalOuter" type="Polygon2D" parent="."]
+polygon = PackedVector2Array(0, 0, 9, -5, 16, -20, 18, -40, 16, -60, 9, -75, 0, -80, -9, -75, -16, -60, -18, -40, -16, -20, -9, -5)
+color = Color(0.35, 0.85, 1.0, 0.92)
+
+; ── 内部深色填充 ─────────────────────────────────────────────
+[node name="PortalInner" type="Polygon2D" parent="."]
+polygon = PackedVector2Array(0, -8, 6, -12, 10, -24, 12, -40, 10, -56, 6, -68, 0, -72, -6, -68, -10, -56, -12, -40, -10, -24, -6, -12)
+color = Color(0.04, 0.10, 0.48, 0.82)
+
+; ── 传送标签 ──────────────────────────────────────────────────
+[node name="PortalLabel" type="Label" parent="."]
+position = Vector2(-22, -100)
+text = "► 传送"
+theme_override_colors/font_color = Color(0.5, 1.0, 1.0, 1.0)
+theme_override_colors/font_shadow_color = Color(0.0, 0.0, 0.0, 1.0)
+theme_override_constants/shadow_offset_x = 1
+theme_override_constants/shadow_offset_y = 1
+theme_override_font_sizes/font_size = 13
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+position = Vector2(0, -42)
+shape = SubResource("Shape_trigger")
+
+[connection signal="body_entered" from="." to="." method="_on_body_entered"]

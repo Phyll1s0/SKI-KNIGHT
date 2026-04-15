@@ -1,0 +1,21 @@
+[gd_scene format=3 uid="uid://hiteffect_scene"]
+; 敌人受击特效：白色短暂爆散，使用后自动销毁
+
+[sub_resource type="ParticleProcessMaterial" id="PPM_hit"]
+direction = Vector3(0, -1, 0)
+spread = 160.0
+initial_velocity_min = 60.0
+initial_velocity_max = 180.0
+gravity = Vector3(0, 200, 0)
+scale_min = 3.0
+scale_max = 6.0
+color = Color(0.9, 0.95, 1.0, 1.0)
+
+[node name="HitEffect" type="GPUParticles2D"]
+emitting = false
+amount = 12
+lifetime = 0.45
+one_shot = true
+explosiveness = 1.0
+process_material = SubResource("PPM_hit")
+visibility_rect = Rect2(-40, -40, 80, 80)

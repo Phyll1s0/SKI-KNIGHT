@@ -1,0 +1,45 @@
+[gd_scene format=3 uid="uid://player_scene"]
+
+[ext_resource type="Script" path="res://scripts/player/Player.gd" id="1"]
+[ext_resource type="Texture2D" uid="uid://dhupj47ql6w4x" path="res://assets/sprites/player/player_sheet.png" id="2"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_body"]
+size = Vector2(28, 48)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_attack"]
+size = Vector2(70, 40)
+
+[node name="Player" type="CharacterBody2D" groups=["player"]]
+script = ExtResource("1")
+floor_snap_length = 8.0
+floor_stop_on_slope = false
+
+[node name="Sprite2D" type="Sprite2D" parent="."]
+position = Vector2(0, 0)
+scale = Vector2(0.33, 0.33)
+texture = ExtResource("2")
+hframes = 7
+texture_filter = 5
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("RectangleShape2D_body")
+
+[node name="AttackArea" type="Area2D" parent="."]
+position = Vector2(40, 0)
+monitoring = false
+collision_layer = 0
+collision_mask = 1
+
+[node name="AttackCollision" type="CollisionShape2D" parent="AttackArea"]
+shape = SubResource("RectangleShape2D_attack")
+
+[node name="Camera2D" type="Camera2D" parent="."]
+zoom = Vector2(1.5, 1.5)
+position_smoothing_enabled = true
+position_smoothing_speed = 8.0
+limit_left = 0
+limit_top = -200
+limit_right = 3100
+limit_bottom = 900
+
+[connection signal="body_entered" from="AttackArea" to="." method="_on_attack_area_body_entered"]

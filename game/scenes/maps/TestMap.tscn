@@ -1,0 +1,306 @@
+[gd_scene format=3 uid="uid://testmap_scene"]
+
+[ext_resource type="PackedScene" path="res://scenes/player/Player.tscn" id="1"]
+[ext_resource type="Script" path="res://scripts/systems/TestMap.gd" id="2"]
+[ext_resource type="PackedScene" path="res://scenes/enemies/SnowmanSoldier.tscn" id="3"]
+[ext_resource type="PackedScene" path="res://scenes/ui/HUD.tscn" id="4"]
+[ext_resource type="PackedScene" path="res://scenes/enemies/IceTurret.tscn" id="5"]
+[ext_resource type="PackedScene" path="res://scenes/systems/EquipmentPickup.tscn" id="6"]
+[ext_resource type="PackedScene" path="res://scenes/systems/Portal.tscn" id="7"]
+[ext_resource type="Script" path="res://scripts/systems/SpawnPoint.gd" id="8"]
+[ext_resource type="PackedScene" path="res://scenes/systems/SavePoint.tscn" id="9"]
+
+; ── Collision shapes ────────────────────────────────────────────────────
+[sub_resource type="RectangleShape2D" id="Shape_ground_left"]
+size = Vector2(900, 40)
+
+[sub_resource type="RectangleShape2D" id="Shape_ground_mid"]
+size = Vector2(200, 40)
+
+[sub_resource type="ConvexPolygonShape2D" id="Shape_mountain"]
+points = PackedVector2Array(0, 0, 400, -300, 900, 0)
+
+[sub_resource type="RectangleShape2D" id="Shape_ground_flat2"]
+size = Vector2(200, 40)
+
+[sub_resource type="RectangleShape2D" id="Shape_ground_right"]
+size = Vector2(460, 40)
+
+[sub_resource type="RectangleShape2D" id="Shape_wall_left"]
+size = Vector2(40, 600)
+
+[sub_resource type="RectangleShape2D" id="Shape_wall_right"]
+size = Vector2(40, 600)
+
+[sub_resource type="RectangleShape2D" id="Shape_platform1"]
+size = Vector2(200, 20)
+
+[sub_resource type="RectangleShape2D" id="Shape_platform2"]
+size = Vector2(180, 20)
+
+[sub_resource type="RectangleShape2D" id="Shape_platform_guard"]
+size = Vector2(150, 20)
+
+[sub_resource type="RectangleShape2D" id="Shape_platform_secret"]
+size = Vector2(160, 20)
+
+[sub_resource type="ConvexPolygonShape2D" id="Shape_slope"]
+points = PackedVector2Array(0, 0, 300, 0, 0, -150)
+
+; ══════════════════════════════════════════════════════════════════
+;  MAP LAYOUT  (Camera in Player.tscn follows player, zoom=1.5)
+;
+;  x=0──900   Zone1 Tutorial   : flat ground, slope, 2 enemies
+;  x=900──1080               PIT 1 (180px) — normal jump clears it
+;  x=1080─1280  Zone2 Post-pit : guard IceTurret on ledge, SavePoint
+;  x=1280─1680  Mountain Left  : slope going UP-right (decelerate)
+;  x=1680─2180  Mountain Right : ski slope going DOWN-right (accelerate)
+;  x=2180─2380  Flat after ski : enemies at high speed
+;  x=2380─2580               PIT 2 (200px) — needs momentum jump
+;  x=2580─3040  Zone3 Final    : 2 enemies, Turret, SavePoint, Portal
+; ══════════════════════════════════════════════════════════════════
+
+; ── Root ────────────────────────────────────────────────────────────────
+[node name="TestMap" type="Node2D"]
+script = ExtResource("2")
+
+; ── Background（雪山入口：晴空蓝白）─────────────────────────────────────
+[node name="Background" type="CanvasLayer" parent="."]
+layer = -10
+
+[node name="Sky" type="ColorRect" parent="Background"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.56, 0.78, 0.94, 1.0)
+
+; ── HUD ─────────────────────────────────────────────────────────────────
+[node name="HUD" parent="." instance=ExtResource("4")]
+
+; ── DefaultSpawn ────────────────────────────────────────────────────────
+[node name="DefaultSpawn" type="Marker2D" parent="."]
+position = Vector2(200, 656)
+script = ExtResource("8")
+point_name = "DefaultSpawn"
+
+; ── FromGlacier：从冰川迷宫返回时的出生点（Portal 左侧 80px）──────────
+[node name="FromGlacier" type="Marker2D" parent="."]
+position = Vector2(2940, 656)
+script = ExtResource("8")
+point_name = "FromGlacier"
+
+; ── Player ──────────────────────────────────────────────────────────────
+[node name="Player" parent="." instance=ExtResource("1")]
+position = Vector2(200, 656)
+
+; ════════════════════════════════════════════════════════════════════════
+;  ZONE 1 — Tutorial (x=0–900)
+; ════════════════════════════════════════════════════════════════════════
+
+[node name="GroundLeft" type="StaticBody2D" parent="."]
+position = Vector2(450, 700)
+
+[node name="Shape" type="CollisionShape2D" parent="GroundLeft"]
+shape = SubResource("Shape_ground_left")
+
+[node name="Visual" type="Polygon2D" parent="GroundLeft"]
+polygon = PackedVector2Array(-450, -20, 450, -20, 450, 20, -450, 20)
+color = Color(0.78, 0.88, 1.0, 1.0)
+
+[node name="WallLeft" type="StaticBody2D" parent="."]
+position = Vector2(20, 400)
+
+[node name="Shape" type="CollisionShape2D" parent="WallLeft"]
+shape = SubResource("Shape_wall_left")
+
+[node name="Visual" type="Polygon2D" parent="WallLeft"]
+polygon = PackedVector2Array(-20, -300, 20, -300, 20, 300, -20, 300)
+color = Color(0.65, 0.78, 0.95, 1.0)
+
+; Slope — existing (x=600–900, rises 150px)
+[node name="Slope" type="StaticBody2D" parent="."]
+position = Vector2(600, 680)
+
+[node name="SlopeShape" type="CollisionShape2D" parent="Slope"]
+shape = SubResource("Shape_slope")
+
+[node name="SlopeVisual" type="Polygon2D" parent="Slope"]
+polygon = PackedVector2Array(0, 0, 300, 0, 0, -150)
+color = Color(0.82, 0.92, 1.0, 1.0)
+
+; Platform 1 — beginner jump (above left ground)
+[node name="Platform1" type="StaticBody2D" parent="."]
+position = Vector2(300, 560)
+
+[node name="Shape" type="CollisionShape2D" parent="Platform1"]
+shape = SubResource("Shape_platform1")
+
+[node name="Visual" type="Polygon2D" parent="Platform1"]
+polygon = PackedVector2Array(-100, -10, 100, -10, 100, 10, -100, 10)
+color = Color(0.78, 0.88, 1.0, 1.0)
+
+; Platform 2 — jump ramp at pit edge (x=820, y=430)
+[node name="Platform2" type="StaticBody2D" parent="."]
+position = Vector2(820, 430)
+
+[node name="Shape" type="CollisionShape2D" parent="Platform2"]
+shape = SubResource("Shape_platform2")
+
+[node name="Visual" type="Polygon2D" parent="Platform2"]
+polygon = PackedVector2Array(-90, -10, 90, -10, 90, 10, -90, 10)
+color = Color(0.78, 0.88, 1.0, 1.0)
+
+; Zone 1 enemies
+[node name="Enemy1" parent="." instance=ExtResource("3")]
+position = Vector2(500, 656)
+
+[node name="Enemy2" parent="." instance=ExtResource("3")]
+position = Vector2(450, 656)
+
+; Goggles Lv.1 — on Platform1, visible from spawn
+[node name="GogglesPickup" parent="." instance=ExtResource("6")]
+position = Vector2(300, 530)
+slot = 1
+level = 1
+label_text = "雪镜 Lv.1"
+
+; SavePoint 1 — tutorial
+[node name="SavePoint1" parent="." instance=ExtResource("9")]
+position = Vector2(400, 660)
+
+; ════════════════════════════════════════════════════════════════════════
+;  PIT 1 (x=900–1080)
+; ════════════════════════════════════════════════════════════════════════
+
+; ════════════════════════════════════════════════════════════════════════
+;  ZONE 2 — Post-pit (x=1080–1280)
+; ════════════════════════════════════════════════════════════════════════
+
+[node name="GroundMid" type="StaticBody2D" parent="."]
+position = Vector2(1180, 700)
+
+[node name="Shape" type="CollisionShape2D" parent="GroundMid"]
+shape = SubResource("Shape_ground_mid")
+
+[node name="Visual" type="Polygon2D" parent="GroundMid"]
+polygon = PackedVector2Array(-100, -20, 100, -20, 100, 20, -100, 20)
+color = Color(0.78, 0.88, 1.0, 1.0)
+
+; Guard ledge — IceTurret watches the pit crossing
+[node name="PlatformGuard" type="StaticBody2D" parent="."]
+position = Vector2(1110, 530)
+
+[node name="Shape" type="CollisionShape2D" parent="PlatformGuard"]
+shape = SubResource("Shape_platform_guard")
+
+[node name="Visual" type="Polygon2D" parent="PlatformGuard"]
+polygon = PackedVector2Array(-75, -10, 75, -10, 75, 10, -75, 10)
+color = Color(0.65, 0.78, 0.95, 1.0)
+
+[node name="TurretGuard" parent="." instance=ExtResource("5")]
+position = Vector2(1110, 514)
+
+; SavePoint 2 — before mountain
+[node name="SavePoint2" parent="." instance=ExtResource("9")]
+position = Vector2(1200, 660)
+
+; ════════════════════════════════════════════════════════════════════════
+;  MOUNTAIN  (x=1280–2180)
+;  Left face: slope UPHILL going right   → player decelerates
+;  Right face: ski slope DOWNHILL right  → player accelerates to max
+; ════════════════════════════════════════════════════════════════════════
+
+; 完整山体三角：(1280,700)→峰顶(1680,400)→(2180,700) — 单体无内部竖直边缘
+[node name="Mountain" type="StaticBody2D" parent="."]
+position = Vector2(1280, 700)
+
+[node name="Shape" type="CollisionShape2D" parent="Mountain"]
+shape = SubResource("Shape_mountain")
+
+[node name="Visual" type="Polygon2D" parent="Mountain"]
+polygon = PackedVector2Array(0, 0, 400, -300, 900, 0)
+color = Color(0.70, 0.82, 1.0, 1.0)
+
+; Secret platform — reachable only by jumping from mountain peak (~y=400)
+; Jump height from y=400: ~149px → can reach y=250. Platform top at y=270.
+[node name="PlatformSecret" type="StaticBody2D" parent="."]
+position = Vector2(1680, 290)
+
+[node name="Shape" type="CollisionShape2D" parent="PlatformSecret"]
+shape = SubResource("Shape_platform_secret")
+
+[node name="Visual" type="Polygon2D" parent="PlatformSecret"]
+polygon = PackedVector2Array(-80, -10, 80, -10, 80, 10, -80, 10)
+color = Color(1.0, 0.85, 0.3, 1.0)
+
+; 秘密平台上不再放头盔（头盔需到商人处购买）
+
+; ════════════════════════════════════════════════════════════════════════
+;  FLAT AFTER SKI (x=2180–2380)  — enemies at FULL ski speed
+; ════════════════════════════════════════════════════════════════════════
+
+[node name="GroundFlat2" type="StaticBody2D" parent="."]
+position = Vector2(2280, 700)
+
+[node name="Shape" type="CollisionShape2D" parent="GroundFlat2"]
+shape = SubResource("Shape_ground_flat2")
+
+[node name="Visual" type="Polygon2D" parent="GroundFlat2"]
+polygon = PackedVector2Array(-100, -20, 100, -20, 100, 20, -100, 20)
+color = Color(0.78, 0.88, 1.0, 1.0)
+
+; High-speed enemies (player arrives at ~600px/s from ski slope!)
+[node name="Enemy3" parent="." instance=ExtResource("3")]
+position = Vector2(2230, 656)
+
+[node name="Enemy4" parent="." instance=ExtResource("3")]
+position = Vector2(2320, 656)
+
+; ════════════════════════════════════════════════════════════════════════
+;  PIT 2 (x=2380–2580, 200px)  — requires a jump with ski momentum
+; ════════════════════════════════════════════════════════════════════════
+
+; ════════════════════════════════════════════════════════════════════════
+;  ZONE 3 — Final (x=2580–3040)
+; ════════════════════════════════════════════════════════════════════════
+
+[node name="GroundRight" type="StaticBody2D" parent="."]
+position = Vector2(2810, 700)
+
+[node name="Shape" type="CollisionShape2D" parent="GroundRight"]
+shape = SubResource("Shape_ground_right")
+
+[node name="Visual" type="Polygon2D" parent="GroundRight"]
+polygon = PackedVector2Array(-230, -20, 230, -20, 230, 20, -230, 20)
+color = Color(0.78, 0.88, 1.0, 1.0)
+
+[node name="WallRight" type="StaticBody2D" parent="."]
+position = Vector2(3060, 400)
+
+[node name="Shape" type="CollisionShape2D" parent="WallRight"]
+shape = SubResource("Shape_wall_right")
+
+[node name="Visual" type="Polygon2D" parent="WallRight"]
+polygon = PackedVector2Array(-20, -300, 20, -300, 20, 300, -20, 300)
+color = Color(0.65, 0.78, 0.95, 1.0)
+
+[node name="Enemy5" parent="." instance=ExtResource("3")]
+position = Vector2(2650, 656)
+
+[node name="Enemy6" parent="." instance=ExtResource("3")]
+position = Vector2(2820, 656)
+
+[node name="Turret2" parent="." instance=ExtResource("5")]
+position = Vector2(2950, 668)
+
+; SavePoint 3 — before final challenge
+[node name="SavePoint3" parent="." instance=ExtResource("9")]
+position = Vector2(2630, 660)
+
+; Portal → Glacier Maze
+[node name="PortalToGlacier" parent="." instance=ExtResource("7")]
+position = Vector2(3020, 585)
+target_scene = "res://scenes/maps/GlacierMaze.tscn"
+spawn_point_name = "DefaultSpawn"
