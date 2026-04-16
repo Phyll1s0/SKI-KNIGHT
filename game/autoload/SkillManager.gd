@@ -45,6 +45,10 @@ func parallel_speed_bonus() -> float:
 func parallel_friction_bonus() -> float:
 	return 80.0 if has_skill(Skill.PARALLEL_SKIING) else 0.0
 
+# 平行式滑雪：仅允许在雪地使用刹车
+func parallel_brake_on_snow_only() -> bool:
+	return has_skill(Skill.PARALLEL_SKIING)
+
 # 可通行的最大坡度（法线 Y 分量阈值，越小越陡）
 # 默认 0.2；平行式滑雪后 0.1
 func passable_slope_threshold() -> float:
@@ -63,6 +67,20 @@ func carving_air_control_bonus() -> float:
 # 转向响应速度加成（地面 ski_accel 加成）
 func carving_accel_bonus() -> float:
 	return 100.0 if has_skill(Skill.CARVING) else 0.0
+
+# 卡宾：短冲刺参数
+func carving_dash_speed() -> float:
+	return 360.0 if has_skill(Skill.CARVING) else 0.0
+
+func carving_dash_duration() -> float:
+	return 0.14 if has_skill(Skill.CARVING) else 0.0
+
+func carving_dash_cooldown() -> float:
+	return 0.55 if has_skill(Skill.CARVING) else 0.0
+
+# 卡宾：地面可在雪面和冰面都刹车
+func carving_all_surface_brake() -> bool:
+	return has_skill(Skill.CARVING)
 
 # ── 序列化（供 SaveSystem 使用）─────────────────────────────
 func serialize() -> Dictionary:

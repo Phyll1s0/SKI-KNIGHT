@@ -7,7 +7,7 @@ const _BOSS_ATTACK_TELEGRAPH := preload("res://scripts/systems/BossAttackTelegra
 const _BOSS_REWARD_PICKUP_SCENE := preload("res://scenes/systems/BossRewardPickup.tscn")
 
 # ── Stats ──────────────────────────────────────────────────
-@export var max_hp: int = 700
+@export var max_hp: int = 1000
 @export var attack_damage: int = 20
 @export var pounce_damage: int = 40
 @export var move_speed: float = 76.0
@@ -37,7 +37,7 @@ var _pounce_dir: float = 1.0
 var _pounce_timer: float = 0.0   # 扑跳冷却
 var _melee_timer: float = 0.0    # 爪击冷却
 var _state_timer: float = 0.0    # 当前状态已用时间
-var _phase2: bool = false         # hp <= 250 进入二阶段
+var _phase2: bool = false         # hp <= 300 进入二阶段
 var _facing: float = 1.0
 var _home_position: Vector2 = Vector2.ZERO
 var _arena_min_x: float = 0.0
@@ -104,7 +104,7 @@ func _apply_tuning() -> void:
 	_set_facing(1.0)
 
 func _phase2_threshold_hp() -> int:
-	return 250
+	return 300
 
 func _enter_phase2() -> void:
 	_phase2 = true

@@ -12,6 +12,10 @@ var hp: int = max_hp
 @export var max_ski_speed: float = 620.0
 @export var jump_force: float = -540.0
 @export var gravity: float = 980.0
+@export var fall_damage_height_threshold: float = 300.0
+@export var fall_damage_divisor: float = 10.0
+@export var fall_damage_base: int = 10
+const _ICE_SURFACE_FRICTION_THRESHOLD: float = 60.0
 
 # ── Attack ─────────────────────────────────────────────────
 @export var attack_damage: int = 20
@@ -46,6 +50,11 @@ var _facing: int = 1   # 1 = right, -1 = left
 var _debug_frame: int = 0
 var _last_safe_position: Vector2 = Vector2.ZERO
 var _attack_hit_bodies: Dictionary = {}
+var _carving_dash_timer: float = 0.0
+var _carving_dash_cooldown_timer: float = 0.0
+var _carving_dash_dir: float = 1.0
+var _airborne_peak_y: float = 0.0
+var _last_grounded_y: float = 0.0
 
 # 冲撞速度阈值：超过此速度时攻击会触发冲撞伤害加成
 @export var collision_speed_threshold: float = 350.0
@@ -75,6 +84,8 @@ func _ready() -> void:
 	attack_area.set_collision_mask_value(3, true)
 	_update_attack_hitbox()
 	_last_safe_position = global_position
+	_airborne_peak_y = global_position.y
+	_last_grounded_y = global_position.y
 	print("[Player] _ready OK pos=", global_position)
 
 func _on_game_hp_changed(current: int, maximum: int) -> void:
@@ -114,11 +125,14 @@ func _get_ice_blade_damage_value() -> int:
 func _physics_process(delta: float) -> void:
 	if _is_dead:
 		return
+	var was_on_floor: bool = is_on_floor()
 	# 掉坑死亡：y > 1100则立即死亡
 	if global_position.y > 1100:
 		die(true)
 		return
 	_attack_timer = max(_attack_timer - delta, 0.0)
+	_carving_dash_timer = max(_carving_dash_timer - delta, 0.0)
+	_carving_dash_cooldown_timer = max(_carving_dash_cooldown_timer - delta, 0.0)
 	var _prev_inv := _invincible_timer
 	_invincible_timer = max(_invincible_timer - delta, 0.0)
 	if _prev_inv > 0.0 and _invincible_timer == 0.0:
@@ -131,7 +145,11 @@ func _physics_process(delta: float) -> void:
 	_handle_skill(delta)
 
 	move_and_slide()
-	if is_on_floor():
+	var on_floor_now: bool = is_on_floor()
+	_update_fall_damage_state(was_on_floor, on_floor_now)
+	if _is_dead:
+		return
+	if on_floor_now:
 		_last_safe_position = global_position
 	_handle_body_collision()   # 头盔撞击伤害
 	_update_slope_info()
@@ -155,6 +173,12 @@ func _handle_movement(delta: float) -> void:
 	if input_dir != 0:
 		_facing = int(sign(input_dir))
 
+	if _try_start_carving_dash(input_dir):
+		return
+	if _carving_dash_timer > 0.0:
+		velocity.x = _carving_dash_dir * max(absf(velocity.x), SkillManager.carving_dash_speed())
+		return
+
 	# 动态技能加成
 	var friction: float = ski_friction + SkillManager.parallel_friction_bonus()
 	var accel: float = ski_accel + SkillManager.carving_accel_bonus()
@@ -165,8 +189,13 @@ func _handle_movement(delta: float) -> void:
 	if is_on_floor():
 		var fn := get_floor_normal()   # 地面法线，ny < 0（指向玩家）
 		var slope_x := absf(fn.x)      # 0 = 平地，越大坡越陡
-		var can_parallel_brake: bool = SkillManager.has_skill(SkillManager.Skill.PARALLEL_SKIING) \
-			and Input.is_action_pressed("brake") and slope_x > 0.08
+		var can_carving_brake: bool = SkillManager.carving_all_surface_brake() \
+			and Input.is_action_pressed("brake") and _is_on_snow_or_ice_surface()
+		if can_carving_brake:
+			velocity.x = 0.0
+			return
+		var can_parallel_brake: bool = SkillManager.parallel_brake_on_snow_only() \
+			and Input.is_action_pressed("brake") and _is_on_snow_surface()
 		if can_parallel_brake:
 			velocity.x = 0.0
 			return
@@ -201,6 +230,51 @@ func _handle_movement(delta: float) -> void:
 	else:
 		if input_dir != 0:
 			velocity.x = move_toward(velocity.x, input_dir * walk_speed, air_ctrl * delta)
+
+func _update_fall_damage_state(was_on_floor: bool, on_floor_now: bool) -> void:
+	if on_floor_now:
+		if not was_on_floor:
+			_apply_fall_damage_if_needed(global_position.y - _airborne_peak_y)
+		_last_grounded_y = global_position.y
+		_airborne_peak_y = global_position.y
+		return
+	if was_on_floor:
+		_airborne_peak_y = minf(_last_grounded_y, global_position.y)
+		return
+	_airborne_peak_y = minf(_airborne_peak_y, global_position.y)
+
+func _apply_fall_damage_if_needed(fall_height: float) -> void:
+	if fall_height <= fall_damage_height_threshold:
+		return
+	var damage: int = maxi(1, int((fall_height - fall_damage_height_threshold) / fall_damage_divisor) + fall_damage_base)
+	take_damage(damage, Vector2.ZERO, "坠落")
+
+func _try_start_carving_dash(input_dir: float) -> bool:
+	if not SkillManager.has_skill(SkillManager.Skill.CARVING):
+		return false
+	if _carving_dash_cooldown_timer > 0.0:
+		return false
+	if not Input.is_action_just_pressed("brake"):
+		return false
+	var dash_dir: float = signf(input_dir)
+	if is_zero_approx(dash_dir):
+		dash_dir = float(_facing)
+	if is_zero_approx(dash_dir):
+		return false
+	_carving_dash_dir = dash_dir
+	_carving_dash_timer = SkillManager.carving_dash_duration()
+	_carving_dash_cooldown_timer = SkillManager.carving_dash_cooldown()
+	velocity.x = dash_dir * max(absf(velocity.x), SkillManager.carving_dash_speed())
+	return true
+
+func _is_on_ice_surface() -> bool:
+	return is_on_floor() and ski_friction <= _ICE_SURFACE_FRICTION_THRESHOLD
+
+func _is_on_snow_surface() -> bool:
+	return is_on_floor() and ski_friction > _ICE_SURFACE_FRICTION_THRESHOLD
+
+func _is_on_snow_or_ice_surface() -> bool:
+	return is_on_floor() and ski_friction > 0.0
 
 # ── Helmet collision damage (头盔撞击) ─────────────────────
 # 玩家不与敌人体发生物理碰撞，因此这里用前向近距离检测来结算冲撞伤害
@@ -469,6 +543,8 @@ func respawn() -> void:
 		if pos == Vector2.ZERO:
 			pos = Vector2(200, 656)
 	global_position = pos
+	_airborne_peak_y = global_position.y
+	_last_grounded_y = global_position.y
 	if sprite:
 		sprite.modulate = Color(1, 1, 1, 1)
 		sprite.scale = Vector2(0.33, 0.33)
