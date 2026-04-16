@@ -36,12 +36,17 @@ func go_to(scene_path: String, spawn_point: String = "DefaultSpawn") -> void:
 	_spawn_point_name = spawn_point
 	scene_transition_started.emit()
 	await _fade(0.0, 1.0)                         # 淡出 → 黑屏
-	get_tree().change_scene_to_file(scene_path)
+	get_tree().change_scene_to_file(_target_scene)
 	await get_tree().process_frame               # 等新场景的 _ready 执行完
 	await get_tree().process_frame
 	await _fade(1.0, 0.0)                         # 淡入 → 正常
 	_is_transitioning = false
 	scene_transition_finished.emit()
+
+# 在场景切换进行中时，可重定向目标（供死亡复活使用）
+func redirect_to(scene_path: String, spawn_point: String) -> void:
+	_target_scene    = scene_path
+	_spawn_point_name = spawn_point
 
 func get_spawn_point_name() -> String:
 	return _spawn_point_name

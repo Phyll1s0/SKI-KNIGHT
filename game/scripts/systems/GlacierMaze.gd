@@ -72,7 +72,7 @@ func _on_boss_room_trigger_body_entered(body: Node) -> void:
 		return
 	if GameManager.evolution_count >= 1:
 		return
-	_set_boss_room_locked(true)
+	call_deferred("_set_boss_room_locked", true)
 
 func _apply_ice_effect() -> void:
 	if not is_instance_valid(_player):

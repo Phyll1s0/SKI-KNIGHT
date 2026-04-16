@@ -133,7 +133,12 @@ func _on_buy_helmet() -> void:
 	if EquipmentManager.has_equipment(EquipmentManager.Slot.HELMET) or GameManager.gold < 60:
 		return
 	GameManager.add_gold(-60)
+	var unlocked_level: int = int(EquipmentManager.unlocked_level.get(EquipmentManager.Slot.HELMET, 0))
 	EquipmentManager.equip(EquipmentManager.Slot.HELMET, 1)
+	# 首次购买时显示介绍
+	if unlocked_level < 1:
+		var notif: Dictionary = NotificationManager.get_equipment_description(EquipmentManager.Slot.HELMET, 1)
+		NotificationManager.show_item_acquired(notif["name"], notif["desc"])
 	_refresh_ui()
 
 func _on_buy_suit() -> void:
@@ -141,14 +146,22 @@ func _on_buy_suit() -> void:
 		return
 	GameManager.add_gold(-100)
 	GameManager.has_suit_fragment = false
+	var unlocked_level: int = int(EquipmentManager.unlocked_level.get(EquipmentManager.Slot.SUIT, 0))
 	EquipmentManager.equip(EquipmentManager.Slot.SUIT, 1)
+	if unlocked_level < 1:
+		var notif: Dictionary = NotificationManager.get_equipment_description(EquipmentManager.Slot.SUIT, 1)
+		NotificationManager.show_item_acquired(notif["name"], notif["desc"])
 	_refresh_ui()
 
 func _on_buy_board() -> void:
 	if EquipmentManager.has_equipment(EquipmentManager.Slot.SNOWBOARD) or GameManager.gold < 150:
 		return
 	GameManager.add_gold(-150)
+	var unlocked_level: int = int(EquipmentManager.unlocked_level.get(EquipmentManager.Slot.SNOWBOARD, 0))
 	EquipmentManager.equip(EquipmentManager.Slot.SNOWBOARD, 1)
+	if unlocked_level < 1:
+		var notif: Dictionary = NotificationManager.get_equipment_description(EquipmentManager.Slot.SNOWBOARD, 1)
+		NotificationManager.show_item_acquired(notif["name"], notif["desc"])
 	_refresh_ui()
 
 func _on_buy_goggles() -> void:
@@ -157,7 +170,11 @@ func _on_buy_goggles() -> void:
 		return
 	GameManager.add_gold(-80)
 	GameManager.has_goggles_part = false
+	var unlocked_level: int = int(EquipmentManager.unlocked_level.get(EquipmentManager.Slot.GOGGLES, 0))
 	EquipmentManager.upgrade(EquipmentManager.Slot.GOGGLES)
+	if unlocked_level < 2:
+		var notif: Dictionary = NotificationManager.get_equipment_description(EquipmentManager.Slot.GOGGLES, 2)
+		NotificationManager.show_item_acquired(notif["name"], notif["desc"])
 	_refresh_ui()
 
 # ── 范围检测 ─────────────────────────────────────────────────

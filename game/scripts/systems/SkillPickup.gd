@@ -25,6 +25,9 @@ func _on_body_entered(body: Node) -> void:
 	if not body.is_in_group("player"):
 		return
 	SkillManager.unlock(skill as SkillManager.Skill)
+	# 显示技能获得通知
+	var notif: Dictionary = NotificationManager.get_skill_description(skill)
+	NotificationManager.show_item_acquired(notif["name"], notif["desc"])
 	label.visible = true
 	# 显示提示后淡出消失
 	var tween := create_tween()

@@ -416,6 +416,19 @@ theme_override_font_sizes/font_size = 14
 text = "0"
 theme_override_colors/font_color = Color(1.0, 0.88, 0.3, 1.0)
 theme_override_font_sizes/font_size = 14
+; ── Skills Row ────────────────────────────────────────────
+[node name="SkillsRow" type="HBoxContainer" parent="MarginContainer/VBox"]
+theme_override_constants/separation = 5
+
+[node name="SkillsIcon" type="Label" parent="MarginContainer/VBox/SkillsRow"]
+text = "★"
+theme_override_colors/font_color = Color(0.5, 0.85, 1.0, 1.0)
+theme_override_font_sizes/font_size = 14
+
+[node name="SkillsLabel" type="Label" parent="MarginContainer/VBox/SkillsRow"]
+text = "技能: 无"
+theme_override_colors/font_color = Color(0.6, 0.9, 1.0, 1.0)
+theme_override_font_sizes/font_size = 14
 ; ── Minimap ────────────────────────────────────────────────
 [node name="Minimap" parent="." instance=ExtResource("2")]
 

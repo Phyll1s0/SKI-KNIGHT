@@ -55,6 +55,7 @@ var _carving_dash_cooldown_timer: float = 0.0
 var _carving_dash_dir: float = 1.0
 var _airborne_peak_y: float = 0.0
 var _last_grounded_y: float = 0.0
+var _on_ice_surface: bool = false  # 是否在冰面上（通过 IceSurface Area2D 设置）
 
 # 冲撞速度阈值：超过此速度时攻击会触发冲撞伤害加成
 @export var collision_speed_threshold: float = 350.0
@@ -71,6 +72,8 @@ var anim: AnimationPlayer = null   # 等美术资源就绪后接入
 func _ready() -> void:
 	add_to_group("player")
 	attack_area.monitoring = false
+	# 场景加载时清除死亡重试状态（死亡后场景重载，旧实例的 await 不会继续执行）
+	GameManager.clear_death_retry_state()
 	GameManager.hp_changed.connect(_on_game_hp_changed)
 	# 从 GameManager 同步 HP，确保跨地图 HP 保留
 	_on_game_hp_changed(GameManager.player_hp, GameManager.player_max_hp)
@@ -117,7 +120,8 @@ func _update_attack_hitbox() -> void:
 	attack_area.position = Vector2(center_offset * _facing, 0.0)
 
 func _get_attack_damage_value() -> int:
-	return int(round(float(attack_damage) * (1.0 + EquipmentManager.attack_damage_bonus())))
+	var speed_bonus: int = int(abs(velocity.x) / 50.0)
+	return int(round(float(attack_damage + speed_bonus) * (1.0 + EquipmentManager.attack_damage_bonus())))
 
 func _get_ice_blade_damage_value() -> int:
 	return int(round(float(ice_blade_damage) * (1.0 + EquipmentManager.attack_damage_bonus())))
@@ -189,14 +193,17 @@ func _handle_movement(delta: float) -> void:
 	if is_on_floor():
 		var fn := get_floor_normal()   # 地面法线，ny < 0（指向玩家）
 		var slope_x := absf(fn.x)      # 0 = 平地，越大坡越陡
+		
+		# 优先检查刹车（卡宾或平行式滑雪）
+		var is_braking: bool = false
 		var can_carving_brake: bool = SkillManager.carving_all_surface_brake() \
 			and Input.is_action_pressed("brake") and _is_on_snow_or_ice_surface()
-		if can_carving_brake:
-			velocity.x = 0.0
-			return
 		var can_parallel_brake: bool = SkillManager.parallel_brake_on_snow_only() \
 			and Input.is_action_pressed("brake") and _is_on_snow_surface()
-		if can_parallel_brake:
+		
+		if can_carving_brake or can_parallel_brake:
+			is_braking = true
+			# 强制刹车：瞬间停止并持续保持0速度
 			velocity.x = 0.0
 			return
 
@@ -247,6 +254,9 @@ func _apply_fall_damage_if_needed(fall_height: float) -> void:
 	if fall_height <= fall_damage_height_threshold:
 		return
 	var damage: int = maxi(1, int((fall_height - fall_damage_height_threshold) / fall_damage_divisor) + fall_damage_base)
+	var fall_reduction: float = EquipmentManager.fall_damage_reduction()
+	if fall_reduction > 0.0:
+		damage = maxi(1, int(round(float(damage) * (1.0 - fall_reduction))))
 	take_damage(damage, Vector2.ZERO, "坠落")
 
 func _try_start_carving_dash(input_dir: float) -> bool:
@@ -268,13 +278,16 @@ func _try_start_carving_dash(input_dir: float) -> bool:
 	return true
 
 func _is_on_ice_surface() -> bool:
-	return is_on_floor() and ski_friction <= _ICE_SURFACE_FRICTION_THRESHOLD
+	return is_on_floor() and _on_ice_surface
 
 func _is_on_snow_surface() -> bool:
-	return is_on_floor() and ski_friction > _ICE_SURFACE_FRICTION_THRESHOLD
+	return is_on_floor() and not _on_ice_surface
 
 func _is_on_snow_or_ice_surface() -> bool:
-	return is_on_floor() and ski_friction > 0.0
+	return is_on_floor()
+
+func set_on_ice_surface(on_ice: bool) -> void:
+	_on_ice_surface = on_ice
 
 # ── Helmet collision damage (头盔撞击) ─────────────────────
 # 玩家不与敌人体发生物理碰撞，因此这里用前向近距离检测来结算冲撞伤害
@@ -422,6 +435,10 @@ func take_damage(amount: int, hit_source_position: Vector2 = Vector2.ZERO, sourc
 	_invincible_timer = invincible_duration
 	_log_damage_source(final_damage, hit_source_position, source_name)
 
+	# 空中受击时刷新坠落峰值高度，避免累计从更高处起算的坠落伤害
+	if not is_on_floor():
+		_airborne_peak_y = global_position.y
+
 	# Knockback away from damage source
 	if hit_source_position != Vector2.ZERO:
 		var dir: float = sign(global_position.x - hit_source_position.x)
@@ -465,9 +482,19 @@ func die(fell_into_pit: bool = false) -> void:
 		return
 	_is_dead = true
 	GameManager.begin_death_retry_state()
-	if _should_drop_equipment_on_death():
+	
+	print("[Player] die() - Checking equipment:")
+	var items := EquipmentManager.get_equipped_items()
+	print("[Player] Currently equipped items: %d" % items.size())
+	for item in items:
+		print("  - slot=%d level=%d" % [item["slot"], item["level"]])
+	
+	var should_drop := _should_drop_equipment_on_death()
+	print("[Player] _should_drop_equipment_on_death() = %s" % should_drop)
+	
+	if should_drop:
 		_drop_equipped_items(fell_into_pit)
-	SaveSystem.save()
+	SaveSystem.save_equipment_drops_only()  # 只保存掉落物品，不覆盖复活点
 	velocity = Vector2.ZERO
 	respawn_countdown.emit(1)
 
@@ -492,6 +519,7 @@ func _should_drop_equipment_on_death() -> bool:
 
 func _drop_equipped_items(fell_into_pit: bool) -> void:
 	var items := EquipmentManager.get_equipped_items()
+	print("[Player] _dro_equipped_items: count=%d" % items.size())
 	if items.is_empty():
 		return
 	var drop_origin := _last_safe_position if fell_into_pit else global_position
@@ -501,8 +529,11 @@ func _drop_equipped_items(fell_into_pit: bool) -> void:
 	for index in items.size():
 		var item: Dictionary = items[index]
 		var drop_pos := drop_origin + Vector2((index - (items.size() - 1) * 0.5) * 22.0, -4.0 * float(index % 2))
+		print("[Player] Dropping slot=%d level=%d at %s" % [item["slot"], item["level"], drop_pos])
 		EquipmentManager.unequip(item["slot"])
 		var id := GameManager.add_pending_equipment_drop(scene_path, drop_pos, int(item["slot"]), int(item["level"]), String(item["label_text"]))
+		print("[Player] Generated drop_id=%s" % id)
+		# NOTE: 这里创建的 pickup 会在场景重载时被销毁，实际使用的是 BaseMap 从存档重新生成的
 		var pickup: Area2D = _EQUIPMENT_PICKUP_SCENE.instantiate()
 		pickup.slot = int(item["slot"])
 		pickup.level = int(item["level"])
@@ -514,6 +545,7 @@ func _drop_equipped_items(fell_into_pit: bool) -> void:
 		pickup.global_position = drop_pos
 
 func respawn() -> void:
+	print("[Player] respawn() called")
 	GameManager.clear_death_retry_state()
 	velocity = Vector2.ZERO
 	attack_area.monitoring = false
@@ -527,11 +559,26 @@ func respawn() -> void:
 	hp = max_hp
 	GameManager.player_hp = hp
 	GameManager.hp_changed.emit(hp, max_hp)
+	
+	print("[Player] Equipment after respawn:")
+	var items := EquipmentManager.get_equipped_items()
+	print("[Player] Equipped items: %d" % items.size())
+	for item in items:
+		print("  - slot=%d level=%d" % [item["slot"], item["level"]])
 
-	var current_scene: Node = get_tree().current_scene
-	if current_scene != null and not String(current_scene.scene_file_path).is_empty():
-		var spawn_target: String = SceneManager.SAVE_RESPAWN_POINT if GameManager.respawn_position != Vector2.ZERO else "DefaultSpawn"
-		SceneManager.go_to(String(current_scene.scene_file_path), spawn_target)
+	# 复活逻辑：回到存档点所在地图；如果没有存档点则在当前地图 DefaultSpawn 复活
+	var have_save_point: bool = not GameManager.respawn_scene.is_empty() and GameManager.respawn_position != Vector2.ZERO
+	var spawn_target: String = SceneManager.SAVE_RESPAWN_POINT if have_save_point else "DefaultSpawn"
+	var target_scene: String = GameManager.respawn_scene
+	if target_scene.is_empty():
+		var cs: Node = get_tree().current_scene
+		if cs != null:
+			target_scene = String(cs.scene_file_path)
+	if not target_scene.is_empty():
+		if SceneManager.is_transitioning():
+			SceneManager.redirect_to(target_scene, spawn_target)
+		else:
+			SceneManager.go_to(target_scene, spawn_target)
 		return
 
 	var pos: Vector2 = GameManager.respawn_position

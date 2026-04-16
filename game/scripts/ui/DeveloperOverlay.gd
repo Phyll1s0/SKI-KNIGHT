@@ -15,6 +15,7 @@ var _password_input: String = ""
 var _awaiting_password: bool = false
 var _developer_enabled: bool = false
 var _status_message: String = "在游戏中输入 cheat 以开启开发者模式"
+var _undo_snapshot: Dictionary = {}
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
@@ -84,18 +85,25 @@ func _handle_password_input(event: InputEventKey) -> void:
 func _handle_dev_shortcuts(event: InputEventKey) -> bool:
 	var keycode: int = event.keycode
 	if keycode == KEY_F1 or keycode == KEY_T:
+		_save_snapshot()
 		_teleport_player_to_mouse()
 		return true
 	if keycode == KEY_F2 or keycode == KEY_G:
+		_save_snapshot()
 		GameManager.add_gold(500)
 		_status_message = "开发者模式：金币 +500"
 		_refresh_ui()
 		return true
 	if keycode == KEY_F3 or keycode == KEY_L:
+		_save_snapshot()
 		_grant_level_up()
 		return true
 	if keycode == KEY_F4 or keycode == KEY_U:
+		_save_snapshot()
 		_apply_full_upgrade()
+		return true
+	if keycode == KEY_F5 or keycode == KEY_Z:
+		_restore_snapshot()
 		return true
 	return false
 
@@ -109,7 +117,7 @@ func _teleport_player_to_mouse() -> void:
 	var target_position: Vector2 = camera.get_global_mouse_position() if camera != null else player.get_global_mouse_position()
 	player.global_position = target_position
 	player.velocity = Vector2.ZERO
-	GameManager.respawn_position = target_position
+	# 不修改 respawn_position/respawn_scene（传送不应该污染复活点数据）
 	_status_message = "开发者模式：已传送到 (%.0f, %.0f)" % [target_position.x, target_position.y]
 	_refresh_ui()
 
@@ -145,6 +153,60 @@ func _apply_full_upgrade() -> void:
 	_status_message = "开发者模式：已满级、满装、全技能、金币补齐"
 	_refresh_ui()
 
+func _save_snapshot() -> void:
+	var player: CharacterBody2D = _get_player()
+	_undo_snapshot = {
+		"player_level":     GameManager.player_level,
+		"player_exp":       GameManager.player_exp,
+		"player_hp":        GameManager.player_hp,
+		"player_max_hp":    GameManager.player_max_hp,
+		"evolution_count":  GameManager.evolution_count,
+		"gold":             GameManager.gold,
+		"has_suit_fragment":GameManager.has_suit_fragment,
+		"has_goggles_part": GameManager.has_goggles_part,
+		"respawn_position": GameManager.respawn_position,
+		"equipment_level":  EquipmentManager.equipment_level.duplicate(),
+		"unlocked_level":   EquipmentManager.unlocked_level.duplicate(),
+		"unlocked_skills":  SkillManager.unlocked_skills.duplicate(),
+		"player_position":  player.global_position if player != null else Vector2.ZERO,
+	}
+
+func _restore_snapshot() -> void:
+	if _undo_snapshot.is_empty():
+		_status_message = "开发者模式：没有可撤销的操作"
+		_refresh_ui()
+		return
+	# GameManager 状态
+	GameManager.player_level    = _undo_snapshot["player_level"]
+	GameManager.player_exp      = _undo_snapshot["player_exp"]
+	GameManager.player_hp       = _undo_snapshot["player_hp"]
+	GameManager.player_max_hp   = _undo_snapshot["player_max_hp"]
+	GameManager.evolution_count = _undo_snapshot["evolution_count"]
+	GameManager.gold            = _undo_snapshot["gold"]
+	GameManager.has_suit_fragment = _undo_snapshot["has_suit_fragment"]
+	GameManager.has_goggles_part  = _undo_snapshot["has_goggles_part"]
+	GameManager.respawn_position  = _undo_snapshot["respawn_position"]
+	GameManager.hp_changed.emit(GameManager.player_hp, GameManager.player_max_hp)
+	GameManager.exp_changed.emit(GameManager.player_exp, GameManager.exp_needed_for_next_level())
+	GameManager.level_up.emit(GameManager.player_level)
+	GameManager.gold_changed.emit(GameManager.gold)
+	GameManager.evolved.emit(GameManager.evolution_count)
+	# 装备状态
+	for slot: int in _undo_snapshot["equipment_level"]:
+		EquipmentManager.equipment_level[slot] = _undo_snapshot["equipment_level"][slot]
+		EquipmentManager.unlocked_level[slot]  = _undo_snapshot["unlocked_level"][slot]
+		EquipmentManager.equipment_changed.emit(slot, EquipmentManager.equipment_level[slot])
+	# 技能状态
+	SkillManager.unlocked_skills = _undo_snapshot["unlocked_skills"].duplicate()
+	# 玩家位置
+	var player: CharacterBody2D = _get_player()
+	if player != null:
+		player.global_position = _undo_snapshot["player_position"]
+		player.velocity = Vector2.ZERO
+	_undo_snapshot = {}
+	_status_message = "开发者模式：已撤销上一次操作"
+	_refresh_ui()
+
 func _get_player() -> CharacterBody2D:
 	var players: Array = get_tree().get_nodes_in_group("player")
 	if players.is_empty():
@@ -165,4 +227,4 @@ func _refresh_ui() -> void:
 	title_label.text = "开发者模式"
 	status_label.text = _status_message
 	input_label.visible = false
-	help_label.text = "F1/T 传送到鼠标位置\nF2/G +500 金币\nF3/L 升 1 级\nF4/U 满级/满装/全技能"
+	help_label.text = "F1/T 传送到鼠标位置\nF2/G +500 金币\nF3/L 升 1 级\nF4/U 满级/满装/全技能\nF5/Z 撤销上一次操作"

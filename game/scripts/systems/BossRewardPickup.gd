@@ -119,7 +119,18 @@ func _grant_reward() -> void:
 		RewardKind.PARALLEL_SKIING:
 			if not SkillManager.has_skill(SkillManager.Skill.PARALLEL_SKIING):
 				SkillManager.unlock(SkillManager.Skill.PARALLEL_SKIING)
+				# 显示技能获得通知
+				var notif: Dictionary = NotificationManager.get_skill_description(SkillManager.Skill.PARALLEL_SKIING)
+				NotificationManager.show_item_acquired(notif["name"], notif["desc"])
 		RewardKind.SUIT_FRAGMENT:
-			GameManager.has_suit_fragment = true
+			if not GameManager.has_suit_fragment:
+				GameManager.has_suit_fragment = true
+				NotificationManager.show_item_acquired("雪服碎片", "可以用于合成雪服 Lv1装备")
+			else:
+				GameManager.has_suit_fragment = true
 		RewardKind.GOGGLES_PART:
-			GameManager.has_goggles_part = true
+			if not GameManager.has_goggles_part:
+				GameManager.has_goggles_part = true
+				NotificationManager.show_item_acquired("雪镜零件", "可以用于升级雪镜 Lv2")
+			else:
+				GameManager.has_goggles_part = true

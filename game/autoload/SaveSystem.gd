@@ -4,6 +4,58 @@ extends Node
 
 const SAVE_PATH := "user://skiknight_save.json"
 
+# 保存装备掉落，不更新复活点（供死亡时调用）
+func save_equipment_drops_only() -> void:
+	print("[SaveSystem] save_equipment_drops_only: current memory has %d drops" % GameManager.pending_equipment_drops.size())
+	var data: Dictionary = {}
+	
+	# 如果有现有存档，读取并保持其他字段不变
+	if FileAccess.file_exists(SAVE_PATH):
+		var file := FileAccess.open(SAVE_PATH, FileAccess.READ)
+		var text := file.get_as_text()
+		file.close()
+		var parsed: Variant = JSON.parse_string(text)
+		if parsed is Dictionary:
+			data = parsed
+			print("[SaveSystem] Loaded existing save, had %d drops" % data.get("pending_equipment_drops", []).size())
+	
+	# 更新 pending_equipment_drops
+	data["pending_equipment_drops"] = GameManager.pending_equipment_drops
+	print("[SaveSystem] Saving %d drops to file" % GameManager.pending_equipment_drops.size())
+	
+	# 如果是新存档，至少保存当前场景信息
+	if not data.has("current_scene"):
+		var current_scene: Node = get_tree().current_scene
+		if current_scene != null:
+			data["current_scene"] = current_scene.scene_file_path
+	
+	var file := FileAccess.open(SAVE_PATH, FileAccess.WRITE)
+	file.store_string(JSON.stringify(data, "\t"))
+	file.close()
+
+# 从存档加载装备掉落列表（不影响其他数据）
+func load_equipment_drops_only() -> void:
+	print("[SaveSystem] load_equipment_drops_only: memory before clear has %d drops" % GameManager.pending_equipment_drops.size())
+	if not FileAccess.file_exists(SAVE_PATH):
+		print("[SaveSystem] No save file exists")
+		return
+	var file := FileAccess.open(SAVE_PATH, FileAccess.READ)
+	var text := file.get_as_text()
+	file.close()
+	var parsed: Variant = JSON.parse_string(text)
+	if not parsed is Dictionary:
+		print("[SaveSystem] Failed to parse save file")
+		return
+	var data: Dictionary = parsed
+	var drops_in_file: Array = data.get("pending_equipment_drops", [])
+	print("[SaveSystem] File has %d drops" % drops_in_file.size())
+	GameManager.pending_equipment_drops.clear()
+	for entry in drops_in_file:
+		if entry is Dictionary:
+			GameManager.pending_equipment_drops.append(entry)
+			print("[SaveSystem] Loaded drop: id=%s slot=%d level=%d" % [entry.get("id", "?"), entry.get("slot", -1), entry.get("level", -1)])
+	print("[SaveSystem] Loaded %d drops into memory" % GameManager.pending_equipment_drops.size())
+
 func save() -> void:
 	var data := {
 		"player_hp":     GameManager.player_hp,
@@ -33,6 +85,7 @@ func save() -> void:
 		"current_scene": get_tree().current_scene.scene_file_path,
 		"respawn_x":    GameManager.respawn_position.x,
 		"respawn_y":    GameManager.respawn_position.y,
+		"respawn_scene": GameManager.respawn_scene,
 	}
 	var file := FileAccess.open(SAVE_PATH, FileAccess.WRITE)
 	file.store_string(JSON.stringify(data, "\t"))
@@ -99,13 +152,24 @@ func load_save() -> bool:
 
 	if data.has("respawn_x") and data.has("respawn_y"):
 		GameManager.respawn_position = Vector2(data["respawn_x"], data["respawn_y"])
+	if data.has("respawn_scene"):
+		GameManager.respawn_scene = data["respawn_scene"]
+	else:
+		# 旧存档无 respawn_scene 字段，从 current_scene 推断（存档点必定在存档时所在的场景）
+		GameManager.respawn_scene = data.get("current_scene", "")
 
 	# 复活时恢复满血，emit 信号让 HUD 刷新
 	GameManager.player_hp = GameManager.player_max_hp
 	GameManager.hp_changed.emit(GameManager.player_hp, GameManager.player_max_hp)
 
-	if data.has("current_scene"):
-		SceneManager.go_to(data["current_scene"], SceneManager.SAVE_RESPAWN_POINT)
+	# 跳到存档点所在场景；无存档点时回退到当前场景的 DefaultSpawn
+	var have_save_point: bool = not GameManager.respawn_scene.is_empty() and GameManager.respawn_position != Vector2.ZERO
+	var spawn_target: String = SceneManager.SAVE_RESPAWN_POINT if have_save_point else "DefaultSpawn"
+	var go_scene: String = GameManager.respawn_scene
+	if go_scene.is_empty():
+		go_scene = data.get("current_scene", "")
+	if not go_scene.is_empty():
+		SceneManager.go_to(go_scene, spawn_target)
 	return true
 
 func has_save() -> bool:

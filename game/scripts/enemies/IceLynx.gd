@@ -10,24 +10,24 @@ const _BOSS_REWARD_PICKUP_SCENE := preload("res://scenes/systems/BossRewardPicku
 @export var max_hp: int = 1000
 @export var attack_damage: int = 20
 @export var pounce_damage: int = 40
-@export var move_speed: float = 76.0
-@export var pounce_speed: float = 200.0
+@export var move_speed: float = 114.0
+@export var pounce_speed: float = 220.0
 @export var pounce_height: float = -440.0  # 初速度（负=向上）
 @export var gravity: float = 980.0
 @export var detect_range: float = 500.0
-@export var melee_range: float = 38.0
+@export var melee_range: float = 41.8
 @export var pounce_range_min: float = 0.0
 @export var pounce_range_max: float = 280.0
-@export var pounce_cooldown: float = 4.0
-@export var melee_cooldown: float = 3.0
+@export var pounce_cooldown: float = 3.5
+@export var melee_cooldown: float = 1.8
 @export var exp_reward: int = 1000
-@export var attack_reach: float = 28.0
-@export var attack_hitbox_size: Vector2 = Vector2(46.0, 32.0)
+@export var attack_reach: float = 30.8
+@export var attack_hitbox_size: Vector2 = Vector2(46.0, 35.2)
 @export var arena_half_width: float = 140.0
 @export var contact_damage: int = 30
 @export var contact_cooldown: float = 0.75
 @export var body_hitbox_size: Vector2 = Vector2(52.0, 42.0)
-@export var pounce_hitbox_size: Vector2 = Vector2(68.0, 48.0)
+@export var pounce_hitbox_size: Vector2 = Vector2(68.0, 52.8)
 @export var visual_scale: Vector2 = Vector2(1.14, 1.14)
 @export var phase2_tint: Color = Color(1.35, 0.55, 0.55, 1.0)
 
@@ -37,12 +37,13 @@ var _pounce_dir: float = 1.0
 var _pounce_timer: float = 0.0   # 扑跳冷却
 var _melee_timer: float = 0.0    # 爪击冷却
 var _state_timer: float = 0.0    # 当前状态已用时间
-var _phase2: bool = false         # hp <= 300 进入二阶段
+var _phase2: bool = false         # hp <= 600 进入二阶段
 var _facing: float = 1.0
 var _home_position: Vector2 = Vector2.ZERO
 var _arena_min_x: float = 0.0
 var _arena_max_x: float = 0.0
 var _contact_timer: float = 0.0
+var _combat_grace_timer: float = 1.5  # 进场缓冲时间，防止立即攻击
 
 enum State { IDLE, APPROACH, POUNCE_WINDUP, POUNCE_AIR, RECOVER, MELEE_WINDUP, MELEE, HURT, DEAD }
 var state: State = State.IDLE
@@ -104,12 +105,12 @@ func _apply_tuning() -> void:
 	_set_facing(1.0)
 
 func _phase2_threshold_hp() -> int:
-	return 300
+	return 600
 
 func _enter_phase2() -> void:
 	_phase2 = true
-	pounce_cooldown = 4.0
-	pounce_speed = 200.0
+	pounce_cooldown = 2.2
+	pounce_speed = 242.0
 	if sprite != null:
 		var tween: Tween = create_tween()
 		tween.tween_property(sprite, "modulate", phase2_tint, 0.22)
@@ -152,6 +153,7 @@ func _physics_process(delta: float) -> void:
 	_state_timer += delta
 	_pounce_timer = max(_pounce_timer - delta, 0.0)
 	_melee_timer = max(_melee_timer - delta, 0.0)
+	_combat_grace_timer = max(_combat_grace_timer - delta, 0.0)
 
 	# 重力
 	if not is_on_floor():
@@ -177,9 +179,10 @@ func _physics_process(delta: float) -> void:
 			var dir: float = signf(delta_x)
 			_set_facing(dir if not is_zero_approx(dir) else _facing)
 			velocity.x = 0.0 if absf(delta_x) <= 6.0 else dir * move_speed
-			var can_engage: bool = _is_player_inside_arena()
+			var can_engage: bool = _is_player_inside_arena() and _combat_grace_timer <= 0.0
 			var dist: float = global_position.distance_to(_player.global_position) if can_engage else INF
-			var can_melee: bool = can_engage and dist <= melee_range and _melee_timer <= 0.0
+			var horiz_dist: float = absf(delta_x) if can_engage else INF
+			var can_melee: bool = can_engage and horiz_dist <= melee_range and _melee_timer <= 0.0
 			var can_pounce: bool = _phase2 and can_engage and dist >= pounce_range_min and dist <= pounce_range_max and _pounce_timer <= 0.0
 
 			# 碰墙时跳跃避免卡死

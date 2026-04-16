@@ -42,6 +42,7 @@ const EQUIPMENT_ICON_PATHS := {
 @onready var skill_icon_fallback: Label = $MarginContainer/VBox/SkillRow/SkillSlot/Fallback
 @onready var skill_label: Label = $MarginContainer/VBox/SkillRow/SkillLabel
 @onready var gold_label: Label = $MarginContainer/VBox/GoldRow/GoldLabel
+@onready var skills_label: Label = $MarginContainer/VBox/SkillsRow/SkillsLabel
 @onready var debug_label: Label = $DebugLabel
 @onready var respawn_label: Label = $RespawnLabel
 
@@ -56,6 +57,7 @@ func _ready() -> void:
 	GameManager.gold_changed.connect(_on_gold_changed)
 	GameManager.evolved.connect(_on_evolved)
 	EquipmentManager.equipment_changed.connect(_on_equipment_changed)
+	SkillManager.skill_unlocked.connect(_on_skill_unlocked)
 	KeybindManager.bindings_changed.connect(_refresh_action_labels)
 
 	_setup_equipment_ui()
@@ -63,6 +65,7 @@ func _ready() -> void:
 	_refresh_equipment_ui()
 	_refresh_action_labels()
 	_refresh_skill_ui(0.0)
+	_refresh_skills_display()
 	_on_hp_changed(GameManager.player_hp, GameManager.player_max_hp)
 	_on_exp_changed(GameManager.player_exp, GameManager.exp_needed_for_next_level())
 	_refresh_level_label()
@@ -158,6 +161,25 @@ func _refresh_skill_ui(skill_timer: float) -> void:
 func _refresh_action_labels() -> void:
 	skill_label.text = "[%s]冰刃" % KeybindManager.get_display_text("skill")
 
+func _refresh_skills_display() -> void:
+	var skills: Array[String] = []
+	if SkillManager.has_skill(SkillManager.Skill.PARALLEL_SKIING):
+		skills.append("平行式")
+	if SkillManager.has_skill(SkillManager.Skill.CARVING):
+		skills.append("卡宾")
+	if SkillManager.has_skill(SkillManager.Skill.BACK_FLIP):
+		skills.append("后空翻")
+	if SkillManager.has_skill(SkillManager.Skill.ICE_BLADE):
+		skills.append("冰刃")
+	
+	if skills.is_empty():
+		skills_label.text = "技能: 无"
+	else:
+		skills_label.text = "技能: " + " | ".join(skills)
+
+func _on_skill_unlocked(_skill: int) -> void:
+	_refresh_skills_display()
+
 func _get_equipment_icon_path(slot: int, level: int) -> String:
 	var meta: Dictionary = EQUIPMENT_ICON_PATHS.get(slot, {})
 	if slot == EquipmentManager.Slot.GOGGLES and level >= 2:
@@ -181,6 +203,7 @@ func _update_debug() -> void:
 	if not is_instance_valid(_player):
 		debug_label.text = "坐标调试: 未找到玩家"
 		return
+	
 	var scene: Node = get_tree().current_scene
 	var scene_name: String = scene.name if scene != null else "Unknown"
 	var pos: Vector2 = _player.global_position

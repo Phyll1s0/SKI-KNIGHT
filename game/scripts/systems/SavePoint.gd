@@ -14,6 +14,8 @@ func _on_body_entered(body: Node) -> void:
 	if body is Node2D:
 		respawn_pos.y = (body as Node2D).global_position.y
 	GameManager.respawn_position = respawn_pos
+	if get_tree().current_scene != null:
+		GameManager.respawn_scene = String(get_tree().current_scene.scene_file_path)
 	SaveSystem.save()
 	saved_label.visible = true
 	var timer: SceneTreeTimer = get_tree().create_timer(2.0)

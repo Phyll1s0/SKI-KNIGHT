@@ -8,20 +8,20 @@ const _PLACEHOLDER_VISUALS := preload("res://scripts/systems/BossPlaceholderVisu
 const _BOSS_ATTACK_TELEGRAPH := preload("res://scripts/systems/BossAttackTelegraph.gd")
 
 # ── Stats ──────────────────────────────────────────────────
-@export var max_hp: int = 1380
+@export var max_hp: int = 1000
 @export var charge_damage: int = 38
 @export var slam_damage: int = 52
 @export var blizzard_damage: int = 22   # 每颗冰球伤害（PhaseII）
 @export var wind_damage: int = 26
 @export var charge_speed: float = 470.0
-@export var move_speed: float = 84.0
+@export var move_speed: float = 126.0
 @export var gravity: float = 980.0
 @export var detect_range: float = 600.0
 @export var charge_range: float = 420.0
 @export var slam_range: float = 260.0
 @export var blizzard_range: float = 400.0
 @export var charge_cooldown: float = 4.5
-@export var slam_cooldown: float = 6.5
+@export var slam_cooldown: float = 4.0
 @export var blizzard_cooldown: float = 5.5
 @export var exp_reward: int = 800
 @export var iceball_scene: PackedScene = preload("res://scenes/enemies/IceBall.tscn")
@@ -119,8 +119,8 @@ func _physics_process(delta: float) -> void:
 	if not is_on_floor():
 		velocity.y += gravity * delta
 
-	# 二阶段触发
-	if not _phase2 and float(hp) / float(max_hp) <= 0.5:
+	# 二阶段触发（600 血）
+	if not _phase2 and hp <= 600:
 		_phase2 = true
 		if not _rage_triggered:
 			_rage_triggered = true
@@ -227,10 +227,7 @@ func _physics_process(delta: float) -> void:
 			if _state_timer >= 1.5:
 				# 加速所有冷却
 				charge_cooldown = 3.4
-				slam_cooldown = 4.8
-				blizzard_cooldown = 4.2
-				charge_speed = 510.0
-				_change_state(State.ROAM)
+			slam_cooldown = 2.8
 
 		State.HURT:
 			if _state_timer >= 0.35:

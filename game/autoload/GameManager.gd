@@ -4,7 +4,7 @@ const _GOLD_PICKUP_SCENE := preload("res://scenes/systems/GoldPickup.tscn")
 const _GOLD_STACK_SIZE: int = 40
 const _MAX_GOLD_STACKS: int = 5
 const BASE_PLAYER_MAX_HP: int = 100
-const BASE_PLAYER_ATTACK: int = 20
+const BASE_PLAYER_ATTACK: int = 15
 const HP_PER_LEVEL: int = 5
 const PREVIOUS_HP_PER_LEVEL: int = 10
 const LEGACY_BASE_PLAYER_ATTACK: int = 24
@@ -21,6 +21,8 @@ var player_level: int = 1
 var player_attack: int = BASE_PLAYER_ATTACK
 # 最近激活的重生点（Vector2.ZERO 表示未指定）
 var respawn_position: Vector2 = Vector2.ZERO
+# 最近存档点所在的场景路径（空字符串表示未存档）
+var respawn_scene: String = ""
 # Unlocked abilities（兼容旧存档）
 var has_double_jump: bool = false
 var has_ice_blade: bool = false

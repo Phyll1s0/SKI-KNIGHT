@@ -30,9 +30,10 @@ var _respawn_queue: Array = []   # [{record, timer}]
 
 func _ready() -> void:
 	_register_enemies()
-	_place_player()
+	SaveSystem.load_equipment_drops_only()  # 从存档加载装备掉落（死亡复活时需要）
+	_spawn_pending_equipment_drops()         # 先生成装备掉落
+	_place_player()                          # 再放置玩家（避免玩家刚好在掉落点导致 require_reenter）
 	_apply_camera_limits()
-	_spawn_pending_equipment_drops()
 	_queue_area_title()
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -149,15 +150,19 @@ func _spawn_pending_equipment_drops() -> void:
 	if scene == null or scene.scene_file_path.is_empty():
 		return
 	var drops := GameManager.get_pending_equipment_drops(scene.scene_file_path)
+	print("[BaseMap] _spawn_pending_equipment_drops: %d drops" % drops.size())
 	for entry in drops:
 		var pickup: Area2D = _EQUIPMENT_PICKUP_SCENE.instantiate()
+		var pos := Vector2(float(entry.get("x", 0.0)), float(entry.get("y", 0.0)))
+		pickup.global_position = pos  # 在 add_child 之前设置位置
 		pickup.slot = int(entry.get("slot", 0))
 		pickup.level = int(entry.get("level", 1))
 		pickup.label_text = String(entry.get("label_text", "装备"))
 		pickup.runtime_drop = true
 		pickup.drop_id = String(entry.get("id", ""))
+		pickup.pickup_delay = 0.0  # 场景重载后不需要延迟，玩家已复活
+		print("[BaseMap] Spawning equipment: slot=%d level=%d pos=%s id=%s delay=%.2f" % [pickup.slot, pickup.level, pos, pickup.drop_id, pickup.pickup_delay])
 		add_child(pickup)
-		pickup.global_position = Vector2(float(entry.get("x", 0.0)), float(entry.get("y", 0.0)))
 
 func _find_spawn(point_name: String) -> Node:
 	for child in get_children():
