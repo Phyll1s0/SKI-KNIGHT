@@ -14,6 +14,7 @@ const _TITLE_HOLD_TIME := 2.0
 @export var camera_limit_right: int = -1
 @export var enemy_stage_multiplier: int = 1
 @export var area_title: String = ""
+@export var drop_equipment_on_death: bool = false
 
 var _player: CharacterBody2D = null
 var _cold_timer: float = 0.0

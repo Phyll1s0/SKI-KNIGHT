@@ -57,7 +57,8 @@ func load_save() -> bool:
 	GameManager.player_max_hp  = data.get("player_max_hp", GameManager.BASE_PLAYER_MAX_HP)
 	GameManager.player_hp      = data.get("player_hp",     GameManager.player_max_hp)
 	var legacy_max_hp: int = GameManager.legacy_expected_max_hp_for_level(GameManager.player_level)
-	if GameManager.player_max_hp == legacy_max_hp:
+	var previous_max_hp: int = GameManager.previous_expected_max_hp_for_level(GameManager.player_level)
+	if GameManager.player_max_hp == legacy_max_hp or GameManager.player_max_hp == previous_max_hp:
 		GameManager.player_max_hp = GameManager.expected_max_hp_for_level(GameManager.player_level)
 		GameManager.player_hp = min(GameManager.player_hp, GameManager.player_max_hp)
 	var legacy_attack: int = GameManager.legacy_expected_attack_for_level(GameManager.player_level)

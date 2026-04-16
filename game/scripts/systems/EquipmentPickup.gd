@@ -13,6 +13,7 @@ extends Area2D
 
 var _can_pickup: bool = true
 var _collected: bool = false
+var _require_player_reenter: bool = false
 
 func _ready() -> void:
 	add_to_group("equipment_pickup")
@@ -26,6 +27,8 @@ func _ready() -> void:
 		label_text = EquipmentManager.get_label_text(eq_slot, level)
 	if runtime_drop and pickup_delay <= 0.0:
 		pickup_delay = 0.45
+	if runtime_drop and _is_any_player_within_pickup_radius():
+		_require_player_reenter = true
 	_sync_visuals()
 	if pickup_delay > 0.0:
 		_set_pickup_enabled(false)
@@ -50,7 +53,12 @@ func _physics_process(_delta: float) -> void:
 	var player: Node = players[0]
 	if not (player is Node2D):
 		return
-	if global_position.distance_to((player as Node2D).global_position) <= 40.0:
+	var distance_to_player: float = global_position.distance_to((player as Node2D).global_position)
+	if runtime_drop and _require_player_reenter:
+		if distance_to_player <= 40.0:
+			return
+		_require_player_reenter = false
+	if distance_to_player <= 40.0:
 		_try_collect(player)
 
 func _sync_visuals() -> void:
@@ -82,10 +90,18 @@ func _set_pickup_enabled(enabled: bool) -> void:
 	set_deferred("monitoring", enabled)
 	set_deferred("monitorable", enabled)
 
+func _is_any_player_within_pickup_radius() -> bool:
+	for node in get_tree().get_nodes_in_group("player"):
+		if node is Node2D and global_position.distance_to((node as Node2D).global_position) <= 40.0:
+			return true
+	return false
+
 func _try_collect(body: Node) -> void:
 	if _collected or not _can_pickup:
 		return
 	if runtime_drop and (GameManager.death_retry_pending or SceneManager.is_transitioning()):
+		return
+	if runtime_drop and _require_player_reenter:
 		return
 	if not body.is_in_group("player"):
 		return
@@ -99,4 +115,5 @@ func _try_collect(body: Node) -> void:
 		EquipmentManager.equip(eq_slot, level)
 	if runtime_drop and not drop_id.is_empty():
 		GameManager.remove_pending_equipment_drop(drop_id)
+		SaveSystem.save()
 	queue_free()

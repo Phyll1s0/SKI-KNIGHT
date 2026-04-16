@@ -52,18 +52,19 @@ points = PackedVector2Array(0, 0, 300, 0, 0, -150)
 ;
 ;  x=0──900   Zone1 Tutorial   : flat ground, slope, 2 enemies
 ;  x=900──1080               PIT 1 (180px) — normal jump clears it
-;  x=1080─1280  Zone2 Post-pit : guard IceTurret on ledge, SavePoint
+;  x=1080─1280  Zone2 Post-pit : guard IceTurret on ledge
 ;  x=1280─1680  Mountain Left  : slope going UP-right (decelerate)
 ;  x=1680─2180  Mountain Right : ski slope going DOWN-right (accelerate)
 ;  x=2180─2380  Flat after ski : enemies at high speed
 ;  x=2380─2580               PIT 2 (200px) — needs momentum jump
-;  x=2580─3040  Zone3 Final    : 2 enemies, Turret, SavePoint, Portal
+;  x=2580─3040  Zone3 Final    : 2 enemies, Turret, Portal
 ; ══════════════════════════════════════════════════════════════════
 
 ; ── Root ────────────────────────────────────────────────────────────────
 [node name="TestMap" type="Node2D"]
 script = ExtResource("2")
 area_title = "雪山入口"
+drop_equipment_on_death = true
 
 ; ── Background（雪山入口：晴空蓝白）─────────────────────────────────────
 [node name="Background" type="CanvasLayer" parent="."]
@@ -203,10 +204,6 @@ color = Color(0.65, 0.78, 0.95, 1.0)
 [node name="TurretGuard" parent="." instance=ExtResource("5")]
 position = Vector2(1110, 514)
 
-; SavePoint 2 — before mountain
-[node name="SavePoint2" parent="." instance=ExtResource("9")]
-position = Vector2(1200, 660)
-
 ; ════════════════════════════════════════════════════════════════════════
 ;  MOUNTAIN  (x=1280–2180)
 ;  Left face: slope UPHILL going right   → player decelerates
@@ -295,10 +292,6 @@ position = Vector2(2820, 656)
 
 [node name="Turret2" parent="." instance=ExtResource("5")]
 position = Vector2(2950, 668)
-
-; SavePoint 3 — before final challenge
-[node name="SavePoint3" parent="." instance=ExtResource("9")]
-position = Vector2(2630, 660)
 
 ; Portal → Glacier Maze
 [node name="PortalToGlacier" parent="." instance=ExtResource("7")]

@@ -10,6 +10,7 @@ const _STAGE_SCALING := preload("res://scripts/systems/EnemyStageScaling.gd")
 @export var attack_damage: int = 15
 @export var fire_interval: float = 1.65   # 发射间隔（秒）
 @export var detect_range: float = 380.0  # 探测距离
+@export var contact_cooldown: float = 0.8
 @export var exp_reward: int = 20
 @export var gold_min: int = 1
 @export var gold_max: int = 2
@@ -29,8 +30,10 @@ var _is_dead: bool = false
 var _player: CharacterBody2D = null
 var _charging: bool = false
 var _charge_timer: float = 0.0
+var _contact_timer: float = 0.0
 
 @onready var sprite: Sprite2D = $Sprite2D
+@onready var body_collision: CollisionShape2D = $CollisionShape2D
 @onready var detect_area: Area2D = $DetectArea
 @onready var muzzle: Marker2D = $Muzzle
 
@@ -56,6 +59,7 @@ func _apply_stage_scaling() -> void:
 func _process(delta: float) -> void:
 	if _is_dead:
 		return
+	_contact_timer = max(_contact_timer - delta, 0.0)
 
 	# 保底玩家检测
 	if not is_instance_valid(_player):
@@ -63,6 +67,7 @@ func _process(delta: float) -> void:
 			if global_position.distance_to(node.global_position) <= detect_range:
 				_player = node
 				break
+	_check_contact_damage()
 
 	# 充能计时中
 	if _charging:
@@ -78,6 +83,29 @@ func _process(delta: float) -> void:
 		if dist <= detect_range:
 			_start_charge()
 			_fire_timer = fire_interval
+
+func _check_contact_damage() -> void:
+	if _contact_timer > 0.0 or _is_dead or not is_instance_valid(_player):
+		return
+	if _is_player_touching_body():
+		_player.take_damage(attack_damage, global_position, "冰球炮台碰撞")
+		_contact_timer = contact_cooldown
+
+func _is_player_touching_body() -> bool:
+	var player_half_extents: Vector2 = _get_body_half_extents(_player.get_node_or_null("CollisionShape2D") as CollisionShape2D, Vector2(14.0, 24.0))
+	var turret_half_extents: Vector2 = _get_body_half_extents(body_collision, Vector2(18.0, 18.0))
+	var offset: Vector2 = _player.global_position - global_position
+	return absf(offset.x) <= turret_half_extents.x + player_half_extents.x and absf(offset.y) <= turret_half_extents.y + player_half_extents.y
+
+func _get_body_half_extents(collision: CollisionShape2D, fallback: Vector2) -> Vector2:
+	if collision == null or collision.shape == null:
+		return fallback
+	if collision.shape is RectangleShape2D:
+		return (collision.shape as RectangleShape2D).size * 0.5
+	if collision.shape is CircleShape2D:
+		var radius: float = (collision.shape as CircleShape2D).radius
+		return Vector2(radius, radius)
+	return fallback
 
 func _start_charge() -> void:
 	# 充能：变橙预警色

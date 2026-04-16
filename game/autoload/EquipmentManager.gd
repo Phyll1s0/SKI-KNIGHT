@@ -100,6 +100,12 @@ func collision_damage_reduction() -> float:
 		1: return 0.30
 		_: return 0.0
 
+# 头盔：减少受击时的横向击退速度
+func knockback_received_multiplier() -> float:
+	match equipment_level[Slot.HELMET]:
+		1: return 0.5
+		_: return 1.0
+
 # 雪镜：攻击前向距离百分比加成
 func attack_range_bonus() -> float:
 	match equipment_level[Slot.GOGGLES]:

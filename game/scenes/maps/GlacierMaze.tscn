@@ -147,6 +147,7 @@ size = Vector2(300, 20)
 script = ExtResource("2")
 camera_limit_right = 3400
 area_title = "冰川迷宫"
+drop_equipment_on_death = true
 
 ; ── Background（冰川迷宫：深蓝冰穴）─────────────────────────────────────
 [node name="Background" type="CanvasLayer" parent="."]

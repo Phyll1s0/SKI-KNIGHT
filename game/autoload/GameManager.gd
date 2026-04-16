@@ -5,11 +5,13 @@ const _GOLD_STACK_SIZE: int = 40
 const _MAX_GOLD_STACKS: int = 5
 const BASE_PLAYER_MAX_HP: int = 100
 const BASE_PLAYER_ATTACK: int = 20
-const HP_PER_LEVEL: int = 10
+const HP_PER_LEVEL: int = 5
+const PREVIOUS_HP_PER_LEVEL: int = 10
 const LEGACY_BASE_PLAYER_ATTACK: int = 24
 const LEGACY_BASE_PLAYER_MAX_HP: int = 120
 const LEGACY_HP_PER_LEVEL: int = 12
 const BOSS_HIT_HEAL_RATIO: float = 0.03
+const LEVEL_UP_HEAL_RATIO: float = 0.10
 
 # ── Player persistent data ──────────────────────────────────
 var player_max_hp: int = BASE_PLAYER_MAX_HP
@@ -61,6 +63,9 @@ const EXP_TABLE: Array[int] = [
 func expected_max_hp_for_level(level: int) -> int:
 	return BASE_PLAYER_MAX_HP + max(level - 1, 0) * HP_PER_LEVEL
 
+func previous_expected_max_hp_for_level(level: int) -> int:
+	return BASE_PLAYER_MAX_HP + max(level - 1, 0) * PREVIOUS_HP_PER_LEVEL
+
 func expected_attack_for_level(level: int) -> int:
 	return BASE_PLAYER_ATTACK + max(level - 1, 0)
 
@@ -111,8 +116,8 @@ func exp_needed_for_next_level() -> int:
 func _apply_level_bonus() -> void:
 	player_max_hp = expected_max_hp_for_level(player_level)
 	player_attack = expected_attack_for_level(player_level)
-	# 升级恢复 30% 最大血量
-	var restore := int(player_max_hp * 0.3)
+	# 升级恢复当前最大血量的 10%，再额外补上本级新增的 5 点生命
+	var restore := int(player_max_hp * LEVEL_UP_HEAL_RATIO) + HP_PER_LEVEL
 	player_hp = min(player_hp + restore, player_max_hp)
 	hp_changed.emit(player_hp, player_max_hp)
 

@@ -425,7 +425,7 @@ func take_damage(amount: int, hit_source_position: Vector2 = Vector2.ZERO, sourc
 	# Knockback away from damage source
 	if hit_source_position != Vector2.ZERO:
 		var dir: float = sign(global_position.x - hit_source_position.x)
-		velocity.x = dir * knockback_force
+		velocity.x = dir * knockback_force * EquipmentManager.knockback_received_multiplier()
 		velocity.y = -200.0
 
 	# Blink effect
@@ -488,8 +488,7 @@ func _should_drop_equipment_on_death() -> bool:
 	var current_scene: Node = get_tree().current_scene
 	if current_scene == null:
 		return false
-	var scene_path := String(current_scene.scene_file_path)
-	return scene_path == "res://scenes/maps/GlacierMaze.tscn" or current_scene.name == "GlacierMaze"
+	return bool(current_scene.get("drop_equipment_on_death"))
 
 func _drop_equipped_items(fell_into_pit: bool) -> void:
 	var items := EquipmentManager.get_equipped_items()
