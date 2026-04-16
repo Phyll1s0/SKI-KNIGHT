@@ -6,9 +6,11 @@ signal scene_transition_started
 signal scene_transition_finished
 
 const FADE_DURATION := 0.35   # 每段淡化时长（秒）
+const SAVE_RESPAWN_POINT := "__SAVE_RESPAWN__"
 
 var _target_scene: String = ""
 var _spawn_point_name: String = "DefaultSpawn"
+var _is_transitioning: bool = false
 
 # 运行时创建的遮罩节点（避免依赖外部 .tscn）
 var _overlay: ColorRect = null
@@ -27,6 +29,9 @@ func _ready() -> void:
 	_canvas.add_child(_overlay)
 
 func go_to(scene_path: String, spawn_point: String = "DefaultSpawn") -> void:
+	if _is_transitioning:
+		return
+	_is_transitioning = true
 	_target_scene    = scene_path
 	_spawn_point_name = spawn_point
 	scene_transition_started.emit()
@@ -35,10 +40,14 @@ func go_to(scene_path: String, spawn_point: String = "DefaultSpawn") -> void:
 	await get_tree().process_frame               # 等新场景的 _ready 执行完
 	await get_tree().process_frame
 	await _fade(1.0, 0.0)                         # 淡入 → 正常
+	_is_transitioning = false
 	scene_transition_finished.emit()
 
 func get_spawn_point_name() -> String:
 	return _spawn_point_name
+
+func is_transitioning() -> bool:
+	return _is_transitioning
 
 # ── 内部 ────────────────────────────────────────────────────────────────
 

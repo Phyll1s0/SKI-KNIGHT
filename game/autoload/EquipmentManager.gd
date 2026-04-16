@@ -94,11 +94,24 @@ func collision_damage_mult() -> float:
 		1: return 1.5
 		_: return 1.0
 
+# 头盔：减少碰撞/冲撞类受伤
+func collision_damage_reduction() -> float:
+	match equipment_level[Slot.HELMET]:
+		1: return 0.30
+		_: return 0.0
+
 # 雪镜：攻击前向距离百分比加成
 func attack_range_bonus() -> float:
 	match equipment_level[Slot.GOGGLES]:
 		1: return 0.10
 		2: return 0.20
+		_: return 0.0
+
+# 雪镜：攻击伤害百分比加成
+func attack_damage_bonus() -> float:
+	match equipment_level[Slot.GOGGLES]:
+		1: return 0.10
+		2: return 0.30
 		_: return 0.0
 
 # 雪镜二级：提供照明（布尔值）

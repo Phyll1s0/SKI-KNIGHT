@@ -4,6 +4,7 @@ extends Control
 @onready var subtitle: Label     = $VBox/Subtitle
 @onready var continue_btn: Button = $VBox/ContinueBtn
 @onready var delete_btn: Button   = $VBox/DeleteBtn
+@onready var keybind_settings: Control = $KeybindSettings
 
 func _ready() -> void:
 	get_tree().paused = false
@@ -21,11 +22,13 @@ func _on_continue_pressed() -> void:
 func _on_start_pressed() -> void:
 	# 删除旧存档并重置全部数据
 	SaveSystem.delete_save()
-	GameManager.player_max_hp          = 100
-	GameManager.player_hp              = 100
+	GameManager.player_max_hp          = GameManager.BASE_PLAYER_MAX_HP
+	GameManager.player_hp              = GameManager.BASE_PLAYER_MAX_HP
 	GameManager.player_exp             = 0
 	GameManager.player_level           = 1
-	GameManager.player_attack          = 20
+	GameManager.player_attack          = GameManager.BASE_PLAYER_ATTACK
+	GameManager.evolution_count        = 0
+	GameManager.has_double_jump        = false
 	GameManager.gold                   = 0
 	GameManager.has_suit_fragment      = false
 	GameManager.has_goggles_part       = false
@@ -44,7 +47,8 @@ func _on_start_pressed() -> void:
 	SkillManager.unlocked_skills[SkillManager.Skill.ICE_BLADE]       = false
 	SkillManager.unlocked_skills[SkillManager.Skill.PARALLEL_SKIING] = false
 	SkillManager.unlocked_skills[SkillManager.Skill.CARVING]         = false
-	get_tree().change_scene_to_file("res://scenes/maps/TestMap.tscn")
+	SkillManager.unlocked_skills[SkillManager.Skill.BACK_FLIP]       = false
+	SceneManager.go_to("res://scenes/maps/TestMap.tscn")
 
 func _on_delete_pressed() -> void:
 	SaveSystem.delete_save()
@@ -52,3 +56,7 @@ func _on_delete_pressed() -> void:
 
 func _on_quit_pressed() -> void:
 	get_tree().quit()
+
+func _on_settings_pressed() -> void:
+	if keybind_settings != null:
+		keybind_settings.call("open_panel")

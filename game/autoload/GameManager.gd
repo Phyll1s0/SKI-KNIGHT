@@ -1,11 +1,22 @@
 extends Node
 
+const _GOLD_PICKUP_SCENE := preload("res://scenes/systems/GoldPickup.tscn")
+const _GOLD_STACK_SIZE: int = 40
+const _MAX_GOLD_STACKS: int = 5
+const BASE_PLAYER_MAX_HP: int = 100
+const BASE_PLAYER_ATTACK: int = 20
+const HP_PER_LEVEL: int = 10
+const LEGACY_BASE_PLAYER_ATTACK: int = 24
+const LEGACY_BASE_PLAYER_MAX_HP: int = 120
+const LEGACY_HP_PER_LEVEL: int = 12
+const BOSS_HIT_HEAL_RATIO: float = 0.03
+
 # ── Player persistent data ──────────────────────────────────
-var player_max_hp: int = 100
-var player_hp: int = 100
+var player_max_hp: int = BASE_PLAYER_MAX_HP
+var player_hp: int = BASE_PLAYER_MAX_HP
 var player_exp: int = 0
 var player_level: int = 1
-var player_attack: int = 20
+var player_attack: int = BASE_PLAYER_ATTACK
 # 最近激活的重生点（Vector2.ZERO 表示未指定）
 var respawn_position: Vector2 = Vector2.ZERO
 # Unlocked abilities（兼容旧存档）
@@ -47,30 +58,17 @@ const EXP_TABLE: Array[int] = [
 	99999999,
 ]
 
-func _ready() -> void:
-	# 注册方向键 / W 键作为备用输入（与 A/D/Space 并行生效）
-	var ev_left := InputEventKey.new()
-	ev_left.physical_keycode = KEY_LEFT
-	InputMap.action_add_event("move_left", ev_left)
+func expected_max_hp_for_level(level: int) -> int:
+	return BASE_PLAYER_MAX_HP + max(level - 1, 0) * HP_PER_LEVEL
 
-	var ev_right := InputEventKey.new()
-	ev_right.physical_keycode = KEY_RIGHT
-	InputMap.action_add_event("move_right", ev_right)
+func expected_attack_for_level(level: int) -> int:
+	return BASE_PLAYER_ATTACK + max(level - 1, 0)
 
-	var ev_up := InputEventKey.new()
-	ev_up.physical_keycode = KEY_UP
-	InputMap.action_add_event("jump", ev_up)
+func legacy_expected_max_hp_for_level(level: int) -> int:
+	return LEGACY_BASE_PLAYER_MAX_HP + max(level - 1, 0) * LEGACY_HP_PER_LEVEL
 
-	var ev_w := InputEventKey.new()
-	ev_w.physical_keycode = KEY_W
-	InputMap.action_add_event("jump", ev_w)
-
-	# F 键交互
-	if not InputMap.has_action("interact"):
-		InputMap.add_action("interact")
-	var ev_f := InputEventKey.new()
-	ev_f.physical_keycode = KEY_F
-	InputMap.action_add_event("interact", ev_f)
+func legacy_expected_attack_for_level(level: int) -> int:
+	return LEGACY_BASE_PLAYER_ATTACK + max(level - 1, 0)
 
 # ── HP management ──────────────────────────────────────────
 func heal(amount: int) -> void:
@@ -80,6 +78,12 @@ func heal(amount: int) -> void:
 func take_damage(amount: int) -> void:
 	player_hp = max(player_hp - amount, 0)
 	hp_changed.emit(player_hp, player_max_hp)
+
+func on_boss_hit() -> void:
+	if player_hp <= 0:
+		return
+	var restore: int = maxi(1, int(ceil(float(player_max_hp) * BOSS_HIT_HEAL_RATIO)))
+	heal(restore)
 
 # ── EXP / Level ────────────────────────────────────────────
 func _get_level_cap() -> int:
@@ -105,8 +109,8 @@ func exp_needed_for_next_level() -> int:
 	return EXP_TABLE[player_level]
 
 func _apply_level_bonus() -> void:
-	player_max_hp += 10
-	player_attack  += 1
+	player_max_hp = expected_max_hp_for_level(player_level)
+	player_attack = expected_attack_for_level(player_level)
 	# 升级恢复 30% 最大血量
 	var restore := int(player_max_hp * 0.3)
 	player_hp = min(player_hp + restore, player_max_hp)
@@ -137,6 +141,32 @@ func complete_game() -> void:
 func add_gold(amount: int) -> void:
 	gold = max(gold + amount, 0)
 	gold_changed.emit(gold)
+
+func drop_gold(amount: int, parent_node: Node, world_position: Vector2) -> void:
+	if amount <= 0:
+		return
+	if parent_node == null:
+		add_gold(amount)
+		return
+	var stack_count: int = clampi(int(ceil(float(amount) / float(_GOLD_STACK_SIZE))), 1, _MAX_GOLD_STACKS)
+	var remaining: int = amount
+	for stack_index in range(stack_count):
+		var stacks_left: int = stack_count - stack_index
+		var stack_amount: int = int(ceil(float(remaining) / float(stacks_left)))
+		remaining -= stack_amount
+		_spawn_gold_pickup(parent_node, world_position, stack_amount, stack_index, stack_count)
+
+func _spawn_gold_pickup(parent_node: Node, world_position: Vector2, amount: int, stack_index: int, stack_count: int) -> void:
+	var pickup: Area2D = _GOLD_PICKUP_SCENE.instantiate() as Area2D
+	if pickup == null:
+		add_gold(amount)
+		return
+	pickup.set("amount", amount)
+	pickup.set("launch_velocity", Vector2(randf_range(-70.0, 70.0), randf_range(-120.0, -60.0)))
+	parent_node.add_child(pickup)
+	var stack_center: float = (float(stack_count - 1) * 0.5)
+	var spread_x: float = (float(stack_index) - stack_center) * 12.0 + randf_range(-6.0, 6.0)
+	pickup.global_position = world_position + Vector2(spread_x, randf_range(-8.0, 4.0))
 
 func add_pending_equipment_drop(scene_path: String, position: Vector2, slot: int, level: int, label_text: String) -> String:
 	var drop_id := "%s:%d:%d:%d" % [scene_path, Time.get_ticks_msec(), slot, pending_equipment_drops.size()]

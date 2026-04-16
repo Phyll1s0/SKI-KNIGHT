@@ -1,0 +1,68 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/enemies/AvalancheGiant.gd" id="1"]
+
+[sub_resource type="RectangleShape2D" id="Shape_body"]
+size = Vector2(64, 92)
+
+[sub_resource type="RectangleShape2D" id="Shape_punch"]
+size = Vector2(72, 42)
+
+[sub_resource type="CircleShape2D" id="Shape_slam"]
+radius = 110.0
+
+[sub_resource type="RectangleShape2D" id="Shape_avalanche"]
+size = Vector2(260, 44)
+
+[sub_resource type="CircleShape2D" id="Shape_detect"]
+radius = 620.0
+
+[node name="AvalancheGiant" type="CharacterBody2D" groups=["enemy"]]
+script = ExtResource("1")
+
+[node name="Sprite2D" type="Sprite2D" parent="."]
+position = Vector2(0, -18)
+texture_filter = 5
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("Shape_body")
+
+[node name="PunchArea" type="Area2D" parent="."]
+position = Vector2(42, -6)
+monitoring = false
+collision_layer = 0
+collision_mask = 1
+
+[node name="PunchCollision" type="CollisionShape2D" parent="PunchArea"]
+shape = SubResource("Shape_punch")
+
+[node name="SlamArea" type="Area2D" parent="."]
+position = Vector2(0, 18)
+monitoring = false
+collision_layer = 0
+collision_mask = 1
+
+[node name="SlamCollision" type="CollisionShape2D" parent="SlamArea"]
+shape = SubResource("Shape_slam")
+
+[node name="AvalancheArea" type="Area2D" parent="."]
+position = Vector2(110, 14)
+monitoring = false
+collision_layer = 0
+collision_mask = 1
+
+[node name="AvalancheCollision" type="CollisionShape2D" parent="AvalancheArea"]
+shape = SubResource("Shape_avalanche")
+
+[node name="DetectArea" type="Area2D" parent="."]
+collision_layer = 0
+collision_mask = 1
+
+[node name="DetectCollision" type="CollisionShape2D" parent="DetectArea"]
+shape = SubResource("Shape_detect")
+
+[connection signal="body_entered" from="PunchArea" to="." method="_on_punch_area_body_entered"]
+[connection signal="body_entered" from="SlamArea" to="." method="_on_slam_area_body_entered"]
+[connection signal="body_entered" from="AvalancheArea" to="." method="_on_avalanche_area_body_entered"]
+[connection signal="body_entered" from="DetectArea" to="." method="_on_detect_area_body_entered"]
+[connection signal="body_exited" from="DetectArea" to="." method="_on_detect_area_body_exited"]

@@ -13,6 +13,8 @@
 [ext_resource type="Script" path="res://scripts/systems/SpawnPoint.gd" id="11"]
 [ext_resource type="PackedScene" path="res://scenes/enemies/FrozenGuard.tscn" id="12"]
 [ext_resource type="PackedScene" path="res://scenes/systems/Shop.tscn" id="13"]
+[ext_resource type="PackedScene" path="res://scenes/systems/EquipmentGate.tscn" id="14"]
+[ext_resource type="PackedScene" path="res://scenes/enemies/IceCat.tscn" id="15"]
 
 ; ===================================================================
 ; 暴风雪高地 3800px x 1100px
@@ -97,6 +99,8 @@ points = PackedVector2Array(0, 0, 180, 0, 0, -380)
 script = ExtResource("2")
 cold_zone = true
 cold_damage_per_sec = 5
+enemy_stage_multiplier = 2
+area_title = "暴风雪高地"
 
 [node name="HUD" parent="." instance=ExtResource("3")]
 
@@ -104,6 +108,11 @@ cold_damage_per_sec = 5
 position = Vector2(100, 820)
 script = ExtResource("11")
 point_name = "DefaultSpawn"
+
+[node name="SpawnFromGlacier" type="Marker2D" parent="."]
+position = Vector2(140, 820)
+script = ExtResource("11")
+point_name = "FromGlacier"
 
 [node name="SpawnFromIceCave" type="Marker2D" parent="."]
 position = Vector2(3680, 260)
@@ -310,27 +319,22 @@ position = Vector2(800, 420)
 shape = SubResource("Sh_hidden_floor")
 
 ; ─ 技能/装备 ────────────────────────────────────────────────────
-[node name="ParallelSkiGate" parent="." instance=ExtResource("10")]
+[node name="SuitGate" parent="." instance=ExtResource("14")]
 position = Vector2(200, 820)
-required_skill = 1
-hint_text = "\u9700\u8981\u300a\u5e73\u884c\u5f0f\u6ed1\u96ea\u300b\u6280\u80fd"
+required_slot = 3
+required_level = 1
+hint_text = "需要高级雪服（Boss1碎片+商人合成）"
 
 [node name="IceBladeSkillBox" parent="." instance=ExtResource("9")]
 position = Vector2(800, 386)
 skill = 0
-label_text = "\u51b0\u5203\u6295\u63b7\u89e3\u9501\uff01"
+label_text = "冰刃投掷解锁！"
 
 [node name="SnowboardUpgrade" parent="." instance=ExtResource("7")]
 position = Vector2(1980, 546)
 slot = 2
 level = 1
-label_text = "\u5347\u7ea7\u96ea\u677f"
-
-[node name="SuitPickup" parent="." instance=ExtResource("7")]
-position = Vector2(3560, 206)
-slot = 3
-level = 1
-label_text = "\u9ad8\u7ea7\u96ea\u670d"
+label_text = "升级雪板"
 
 ; ─ 存档点 ────────────────────────────────────────────────────────
 [node name="SavePoint1" parent="." instance=ExtResource("8")]
@@ -346,6 +350,7 @@ hint_text = "需要「平行式滑雪」技能（击败冰川雪豹后获得）"
 [node name="WorkshopMerchant" parent="." instance=ExtResource("13")]
 position = Vector2(460, 820)
 shop_name = "暴风雪高地·工坊"
+shop_role = 1
 
 [node name="SavePoint2" parent="." instance=ExtResource("8")]
 position = Vector2(1800, 840)
@@ -363,6 +368,9 @@ position = Vector2(550, 840)
 [node name="Turret1" parent="." instance=ExtResource("5")]
 position = Vector2(900, 838)
 
+[node name="IceCat1" parent="." instance=ExtResource("15")]
+position = Vector2(760, 840)
+
 [node name="Snowman3" parent="." instance=ExtResource("4")]
 position = Vector2(1150, 838)
 
@@ -371,6 +379,9 @@ position = Vector2(1380, 838)
 
 [node name="Turret2" parent="." instance=ExtResource("5")]
 position = Vector2(1640, 838)
+
+[node name="IceCat2" parent="." instance=ExtResource("15")]
+position = Vector2(1760, 838)
 
 [node name="Snowman5" parent="." instance=ExtResource("4")]
 position = Vector2(1880, 838)
@@ -398,6 +409,9 @@ position = Vector2(1980, 542)
 
 [node name="SnowmanHigh2" parent="." instance=ExtResource("4")]
 position = Vector2(2760, 540)
+
+[node name="IceCat3" parent="." instance=ExtResource("15")]
+position = Vector2(2620, 540)
 
 ; ─ 传送门 ────────────────────────────────────────────────────────
 [node name="PortalBack" parent="." instance=ExtResource("6")]

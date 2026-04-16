@@ -4,14 +4,17 @@ extends CharacterBody2D
 #   Phase 1 (hp > 50%): 冲锋 + 跳砸
 #   Phase 2 (hp ≤ 50%): 增加暴风雪（散射冰球）+ 风暴冲击（击退玩家）
 
+const _PLACEHOLDER_VISUALS := preload("res://scripts/systems/BossPlaceholderVisuals.gd")
+const _BOSS_ATTACK_TELEGRAPH := preload("res://scripts/systems/BossAttackTelegraph.gd")
+
 # ── Stats ──────────────────────────────────────────────────
-@export var max_hp: int = 700
-@export var charge_damage: int = 32
-@export var slam_damage: int = 42
-@export var blizzard_damage: int = 16   # 每颗冰球伤害（PhaseII）
-@export var wind_damage: int = 18
-@export var charge_speed: float = 500.0
-@export var move_speed: float = 88.0
+@export var max_hp: int = 1380
+@export var charge_damage: int = 38
+@export var slam_damage: int = 52
+@export var blizzard_damage: int = 22   # 每颗冰球伤害（PhaseII）
+@export var wind_damage: int = 26
+@export var charge_speed: float = 470.0
+@export var move_speed: float = 84.0
 @export var gravity: float = 980.0
 @export var detect_range: float = 600.0
 @export var charge_range: float = 420.0
@@ -20,8 +23,12 @@ extends CharacterBody2D
 @export var charge_cooldown: float = 4.5
 @export var slam_cooldown: float = 6.5
 @export var blizzard_cooldown: float = 5.5
-@export var exp_reward: int = 650
+@export var exp_reward: int = 800
 @export var iceball_scene: PackedScene = preload("res://scenes/enemies/IceBall.tscn")
+@export var contact_damage: int = 28
+@export var contact_cooldown: float = 0.9
+@export var cleave_damage: int = 34
+@export var cleave_cooldown: float = 4.0
 
 var hp: int = max_hp
 var _is_dead: bool = false
@@ -32,14 +39,19 @@ var _charge_timer: float = 2.0
 var _slam_timer: float = 4.0
 var _blizzard_timer: float = 3.0
 var _state_timer: float = 0.0
+var _contact_timer: float = 0.0
+var _facing: float = 1.0
+var _cleave_timer: float = 1.8
 
 enum State { IDLE, ROAM, CHARGE_WINDUP, CHARGING, CHARGE_STOP,
 			 SLAM_WINDUP, SLAM_AIR, SLAM_LAND,
+			 CLEAVE_WINDUP, CLEAVE,
 			 BLIZZARD_CAST, WIND_BURST,
 			 PHASE2_RAGE, HURT, DEAD }
 var state: State = State.IDLE
 
 @onready var sprite: Sprite2D = $Sprite2D
+@onready var body_collision: CollisionShape2D = $CollisionShape2D
 @onready var charge_area: Area2D = $ChargeArea
 @onready var slam_area: Area2D = $SlamArea
 @onready var wind_area: Area2D = $WindArea
@@ -47,9 +59,13 @@ var state: State = State.IDLE
 @onready var muzzle: Marker2D = $Muzzle
 
 var _player: CharacterBody2D = null
+var _telegraph: Node = null
 
 func _ready() -> void:
 	add_to_group("enemy")
+	_ensure_placeholder_visuals()
+	_telegraph = _BOSS_ATTACK_TELEGRAPH.new()
+	add_child(_telegraph)
 	charge_area.monitoring = false
 	slam_area.monitoring = false
 	wind_area.monitoring = false
@@ -64,10 +80,28 @@ func _ready() -> void:
 	wind_area.set_collision_mask_value(2, true)
 	detect_area.set_collision_mask_value(1, false)
 	detect_area.set_collision_mask_value(2, true)
+	_set_facing(1.0)
+
+func _ensure_placeholder_visuals() -> void:
+	if sprite != null and sprite.texture == null:
+		sprite.texture = _PLACEHOLDER_VISUALS.make_snow_king_body()
 
 func _change_state(new_state: State) -> void:
 	state = new_state
 	_state_timer = 0.0
+
+func _set_facing(dir: float) -> void:
+	if is_zero_approx(dir):
+		return
+	_facing = signf(dir)
+	if sprite != null:
+		sprite.flip_h = _facing < 0.0
+	if charge_area != null:
+		charge_area.position.x = 38.0 * _facing
+	if wind_area != null:
+		wind_area.position.x = 92.0 * _facing
+	if muzzle != null:
+		muzzle.position.x = 30.0 * _facing
 
 func _physics_process(delta: float) -> void:
 	if _is_dead:
@@ -77,6 +111,10 @@ func _physics_process(delta: float) -> void:
 	_charge_timer = max(_charge_timer - delta, 0.0)
 	_slam_timer = max(_slam_timer - delta, 0.0)
 	_blizzard_timer = max(_blizzard_timer - delta, 0.0)
+	_cleave_timer = max(_cleave_timer - delta, 0.0)
+	_contact_timer = max(_contact_timer - delta, 0.0)
+	if _telegraph != null:
+		_telegraph.hide_warning()
 
 	if not is_on_floor():
 		velocity.y += gravity * delta
@@ -100,8 +138,11 @@ func _physics_process(delta: float) -> void:
 
 		State.CHARGE_WINDUP:
 			velocity.x = 0.0
-			if _state_timer >= 0.6:
+			if _telegraph != null:
+				_telegraph.show_forward(_charge_dir if not is_zero_approx(_charge_dir) else _facing, 168.0, "冲锋", -26.0)
+			if _state_timer >= 0.78:
 				_charge_dir = sign(_player.global_position.x - global_position.x) if is_instance_valid(_player) else _charge_dir
+				_set_facing(_charge_dir)
 				charge_area.monitoring = true
 				velocity.x = _charge_dir * charge_speed
 				_change_state(State.CHARGING)
@@ -121,7 +162,9 @@ func _physics_process(delta: float) -> void:
 
 		State.SLAM_WINDUP:
 			velocity.x = 0.0
-			if _state_timer >= 0.5:
+			if _telegraph != null:
+				_telegraph.show_zone(320.0, "跳砸", 20.0)
+			if _state_timer >= 0.65:
 				velocity.y = -640.0
 				_change_state(State.SLAM_AIR)
 
@@ -137,20 +180,44 @@ func _physics_process(delta: float) -> void:
 				_slam_timer = slam_cooldown
 				_change_state(State.ROAM)
 
+		State.CLEAVE_WINDUP:
+			velocity.x = 0.0
+			if is_instance_valid(_player):
+				_set_facing(_player.global_position.x - global_position.x)
+			if _telegraph != null:
+				_telegraph.show_forward(_facing, 172.0, "王斩", -20.0)
+			if _state_timer >= 0.44:
+				_hit_player_in_box(172.0, 52.0, cleave_damage, "雪山之王王斩")
+				_cleave_timer = cleave_cooldown
+				_change_state(State.CLEAVE)
+
+		State.CLEAVE:
+			velocity.x = 0.0
+			if _state_timer >= 0.2:
+				_change_state(State.ROAM)
+
 		State.BLIZZARD_CAST:
 			velocity.x = 0.0
 			# 0.6s 吟唱后发射 5 颗扇形冰球
-			if _state_timer >= 0.6 and _state_timer < 0.65:
+			if is_instance_valid(_player):
+				_set_facing(_player.global_position.x - global_position.x)
+			if _telegraph != null:
+				_telegraph.show_forward(_facing, 190.0, "暴风雪", -28.0)
+			if _state_timer >= 0.78 and _state_timer < 0.84:
 				_fire_blizzard()
-			if _state_timer >= 1.2:
+			if _state_timer >= 1.35:
 				_blizzard_timer = blizzard_cooldown
 				_change_state(State.ROAM)
 
 		State.WIND_BURST:
 			velocity.x = 0.0
-			if _state_timer >= 0.3 and _state_timer < 0.35:
+			if is_instance_valid(_player):
+				_set_facing(_player.global_position.x - global_position.x)
+			if _telegraph != null:
+				_telegraph.show_forward(_facing, 180.0, "风暴冲击", -18.0)
+			if _state_timer >= 0.4 and _state_timer < 0.46:
 				wind_area.monitoring = true
-			if _state_timer >= 0.6:
+			if _state_timer >= 0.78:
 				wind_area.monitoring = false
 				_change_state(State.ROAM)
 
@@ -159,10 +226,10 @@ func _physics_process(delta: float) -> void:
 			velocity.x = 0.0
 			if _state_timer >= 1.5:
 				# 加速所有冷却
-				charge_cooldown = 3.0
-				slam_cooldown = 4.5
-				blizzard_cooldown = 4.0
-				charge_speed = 580.0
+				charge_cooldown = 3.4
+				slam_cooldown = 4.8
+				blizzard_cooldown = 4.2
+				charge_speed = 510.0
 				_change_state(State.ROAM)
 
 		State.HURT:
@@ -170,9 +237,10 @@ func _physics_process(delta: float) -> void:
 				_change_state(State.ROAM)
 
 	move_and_slide()
+	_check_contact_damage()
 
-	if sprite and velocity.x != 0:
-		sprite.flip_h = velocity.x < 0
+	if velocity.x != 0.0:
+		_set_facing(velocity.x)
 
 func _do_roam(delta: float) -> void:
 	if not is_instance_valid(_player):
@@ -182,6 +250,12 @@ func _do_roam(delta: float) -> void:
 
 	var dist := global_position.distance_to(_player.global_position)
 	var dir: float = sign(_player.global_position.x - global_position.x)
+	var x_dist: float = absf(_player.global_position.x - global_position.x)
+	var y_dist: float = absf(_player.global_position.y - global_position.y)
+	_set_facing(dir if not is_zero_approx(dir) else _facing)
+	if _cleave_timer <= 0.0 and x_dist <= 172.0 and y_dist <= 62.0:
+		_change_state(State.CLEAVE_WINDUP)
+		return
 
 	# Phase 2 优先：暴风雪
 	if _phase2 and _blizzard_timer <= 0.0 and dist <= blizzard_range:
@@ -206,6 +280,34 @@ func _do_roam(delta: float) -> void:
 	# 普通走近
 	velocity.x = dir * move_speed * (1.0 if dist > 80.0 else 0.0)
 
+func _get_body_half_extents() -> Vector2:
+	if body_collision != null:
+		if body_collision.shape is RectangleShape2D:
+			return (body_collision.shape as RectangleShape2D).size * 0.5
+		if body_collision.shape is CircleShape2D:
+			var radius: float = (body_collision.shape as CircleShape2D).radius
+			return Vector2(radius, radius)
+	return Vector2(26.0, 36.0)
+
+func _check_contact_damage() -> void:
+	if _contact_timer > 0.0 or _is_dead or not is_instance_valid(_player):
+		return
+	var extents: Vector2 = _get_body_half_extents()
+	var x_dist: float = absf(_player.global_position.x - global_position.x)
+	var y_dist: float = absf(_player.global_position.y - global_position.y)
+	if x_dist <= extents.x + 18.0 and y_dist <= extents.y + 18.0:
+		_player.take_damage(contact_damage, global_position, "雪山之王碰撞")
+		_contact_timer = contact_cooldown
+
+func _hit_player_in_box(forward_range: float, half_height: float, damage: int, source_name: String) -> void:
+	if not is_instance_valid(_player):
+		return
+	var offset: Vector2 = _player.global_position - global_position
+	if offset.x * _facing < 0.0:
+		return
+	if absf(offset.x) <= forward_range and absf(offset.y) <= half_height:
+		_player.take_damage(damage, global_position, source_name)
+
 # ── 发射暴风雪（5颗扇形）──────────────────────────────────
 func _fire_blizzard() -> void:
 	if not is_instance_valid(_player):
@@ -224,6 +326,8 @@ func _fire_blizzard() -> void:
 func take_damage(amount: int, hit_pos: Vector2 = Vector2.ZERO) -> void:
 	if _is_dead:
 		return
+	if amount > 0:
+		GameManager.on_boss_hit()
 	hp -= amount
 	if hp <= 0:
 		_die()
@@ -243,8 +347,11 @@ func _die() -> void:
 	charge_area.monitoring = false
 	slam_area.monitoring = false
 	wind_area.monitoring = false
+	_contact_timer = 0.0
+	if _telegraph != null:
+		_telegraph.hide_warning()
 	GameManager.gain_exp(exp_reward)
-	GameManager.add_gold(200)
+	GameManager.drop_gold(200, get_parent(), global_position)
 	GameManager.on_enemy_killed()
 	GameManager.complete_game()
 	var tween := create_tween()
@@ -265,15 +372,15 @@ func _on_detect_area_body_exited(body: Node) -> void:
 
 func _on_charge_area_body_entered(body: Node) -> void:
 	if body.has_method("take_damage"):
-		body.take_damage(charge_damage, global_position)
+		body.take_damage(charge_damage, global_position, "雪山之王冲锋")
 
 func _on_slam_area_body_entered(body: Node) -> void:
 	if body.has_method("take_damage"):
-		body.take_damage(slam_damage, global_position)
+		body.take_damage(slam_damage, global_position, "雪山之王跳砸")
 
 func _on_wind_area_body_entered(body: Node) -> void:
 	if body.has_method("take_damage"):
-		body.take_damage(wind_damage, global_position)
+		body.take_damage(wind_damage, global_position, "雪山之王风暴冲击")
 	# 强力击退
 	if body is CharacterBody2D:
 		var knock_dir: float = sign(body.global_position.x - global_position.x)

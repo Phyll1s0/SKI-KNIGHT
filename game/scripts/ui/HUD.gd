@@ -46,7 +46,6 @@ const EQUIPMENT_ICON_PATHS := {
 @onready var respawn_label: Label = $RespawnLabel
 
 var _player: CharacterBody2D = null
-var _debug_tick: int = 0
 var _equipment_ui: Dictionary = {}
 
 func _ready() -> void:
@@ -57,10 +56,12 @@ func _ready() -> void:
 	GameManager.gold_changed.connect(_on_gold_changed)
 	GameManager.evolved.connect(_on_evolved)
 	EquipmentManager.equipment_changed.connect(_on_equipment_changed)
+	KeybindManager.bindings_changed.connect(_refresh_action_labels)
 
 	_setup_equipment_ui()
 	_apply_static_icons()
 	_refresh_equipment_ui()
+	_refresh_action_labels()
 	_refresh_skill_ui(0.0)
 	_on_hp_changed(GameManager.player_hp, GameManager.player_max_hp)
 	_on_exp_changed(GameManager.player_exp, GameManager.exp_needed_for_next_level())
@@ -154,6 +155,9 @@ func _refresh_skill_ui(skill_timer: float) -> void:
 	skill_label.modulate = Color(0.5, 0.85, 1.0, 1.0) if unlocked else Color(0.72, 0.8, 0.92, 0.9)
 	skill_bar.modulate = Color(1.0, 1.0, 1.0, 1.0) if unlocked else Color(0.74, 0.82, 0.94, 0.72)
 
+func _refresh_action_labels() -> void:
+	skill_label.text = "[%s]冰刃" % KeybindManager.get_display_text("skill")
+
 func _get_equipment_icon_path(slot: int, level: int) -> String:
 	var meta: Dictionary = EQUIPMENT_ICON_PATHS.get(slot, {})
 	if slot == EquipmentManager.Slot.GOGGLES and level >= 2:
@@ -161,30 +165,37 @@ func _get_equipment_icon_path(slot: int, level: int) -> String:
 	return meta.get(1, "")
 
 func _process(_delta: float) -> void:
-	_debug_tick += 1
-	if _debug_tick % 30 == 0:
-		_update_debug()
+	_update_debug()
 
 func _find_player() -> void:
 	var players := get_tree().get_nodes_in_group("player")
 	if players.size() > 0:
 		_player = players[0]
-		debug_label.text = "debug: player found!"
+		debug_label.text = "坐标调试已开启"
 		_player.respawn_countdown.connect(_on_respawn_countdown)
 		_player.respawned.connect(_on_respawned)
 	else:
-		debug_label.text = "debug: NO PLAYER IN GROUP 'player'!"
+		debug_label.text = "坐标调试: 未找到玩家"
 
 func _update_debug() -> void:
 	if not is_instance_valid(_player):
-		debug_label.text = "t=" + str(Time.get_ticks_msec()) + " NO_PLAYER"
+		debug_label.text = "坐标调试: 未找到玩家"
 		return
-	var inp := Input.get_axis("move_left", "move_right")
-	var vx := _player.velocity.x
-	var fl := _player.is_on_floor()
-	var msg := "vx=" + str(int(vx)) + "  inp=" + str(snapped(inp, 0.01)) + "  floor=" + str(fl)
+	var scene: Node = get_tree().current_scene
+	var scene_name: String = scene.name if scene != null else "Unknown"
+	var pos: Vector2 = _player.global_position
+	var msg: String = "场景=%s  玩家=(%d, %d)  vx=%d  floor=%s" % [
+		scene_name,
+		int(round(pos.x)),
+		int(round(pos.y)),
+		int(round(_player.velocity.x)),
+		str(_player.is_on_floor())
+	]
+	if scene_name == "GlacierMaze":
+		msg += "\n右下存档=(3086,836)  商人=(3040,860)  坡起点=(3080,840)"
+		msg += "\n中转台=(3240,550)  上层存档=(3320,140)"
+		msg += "\n从右下补给点往右上爬第一段，再沿第二段往左上"
 	debug_label.text = msg
-	print("[DBG] ", msg)
 	var raw: Variant = _player.get("_skill_timer")
 	var st: float = float(raw) if raw != null else 0.0
 	_refresh_skill_ui(st)
@@ -211,9 +222,7 @@ func _on_exp_changed(current: int, _needed: int) -> void:
 func _refresh_level_label() -> void:
 	var cap := GameManager._get_level_cap()
 	if GameManager.player_level >= cap:
-		var boss_names: Array[String] = ["打败冰川雪豹", "打败冻结守卫", "打败雪崩巨人", ""]
-		var hint: String = boss_names[min(GameManager.evolution_count, 3)]
-		level_label.text = "Lv.%d ✦ %s" % [GameManager.player_level, hint]
+		level_label.text = "Lv.%d" % GameManager.player_level
 		level_label.modulate = Color(1.0, 0.8, 0.2, 1.0)
 	else:
 		level_label.text = "Lv.%d" % GameManager.player_level

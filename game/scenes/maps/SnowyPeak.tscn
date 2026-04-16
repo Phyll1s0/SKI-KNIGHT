@@ -11,6 +11,8 @@
 [ext_resource type="Script" path="res://scripts/systems/SpawnPoint.gd" id="9"]
 [ext_resource type="PackedScene" path="res://scenes/systems/CableCar.tscn" id="10"]
 [ext_resource type="PackedScene" path="res://scenes/enemies/SnowKing.tscn" id="11"]
+[ext_resource type="PackedScene" path="res://scenes/enemies/IceCat.tscn" id="12"]
+[ext_resource type="PackedScene" path="res://scenes/enemies/ArmoredIceBear.tscn" id="13"]
 
 ; ====================================================================
 ; 雪山顶峰 3400px x 1000px
@@ -110,6 +112,8 @@ size = Vector2(500, 40)
 script = ExtResource("2")
 cold_zone = true
 cold_damage_per_sec = 4
+enemy_stage_multiplier = 4
+area_title = "雪山顶峰"
 
 [node name="HUD" parent="." instance=ExtResource("3")]
 
@@ -325,6 +329,9 @@ position = Vector2(900, 858)
 [node name="Snowman3" parent="." instance=ExtResource("4")]
 position = Vector2(1200, 840)
 
+[node name="IceCat1" parent="." instance=ExtResource("12")]
+position = Vector2(1340, 840)
+
 [node name="Snowman4" parent="." instance=ExtResource("4")]
 position = Vector2(1500, 840)
 
@@ -333,6 +340,9 @@ position = Vector2(1700, 838)
 
 [node name="Snowman5" parent="." instance=ExtResource("4")]
 position = Vector2(1950, 720)
+
+[node name="ArmoredIceBear1" parent="." instance=ExtResource("13")]
+position = Vector2(2100, 718)
 
 [node name="Turret4" parent="." instance=ExtResource("5")]
 position = Vector2(2200, 718)
@@ -344,8 +354,14 @@ position = Vector2(2350, 600)
 [node name="Snowman7" parent="." instance=ExtResource("4")]
 position = Vector2(2600, 580)
 
+[node name="ArmoredIceBear2" parent="." instance=ExtResource("13")]
+position = Vector2(2720, 578)
+
 [node name="Turret5" parent="." instance=ExtResource("5")]
 position = Vector2(2800, 438)
+
+[node name="IceCat2" parent="." instance=ExtResource("12")]
+position = Vector2(2920, 418)
 
 [node name="Snowman8" parent="." instance=ExtResource("4")]
 position = Vector2(2980, 418)

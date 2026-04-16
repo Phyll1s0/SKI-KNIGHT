@@ -3,11 +3,16 @@ extends Area2D
 # 玩家进入范围后显示 [F] 提示，按 F 开/关购买面板
 
 @export var shop_name: String = "冰川迷宫·铁匠商人"
+@export_enum("MERCHANT:0", "WORKSHOP:1") var shop_role: int = 0
+
+const ROLE_MERCHANT := 0
+const ROLE_WORKSHOP := 1
 
 @onready var prompt_label: Label  = $PromptLabel
 @onready var shop_panel: Panel    = $ShopCanvas/ShopPanel
 @onready var gold_label: Label    = $ShopCanvas/ShopPanel/VBox/GoldRow/GoldAmount
 @onready var title_label: Label   = $ShopCanvas/ShopPanel/VBox/Title
+@onready var close_tip: Label     = $ShopCanvas/ShopPanel/VBox/CloseTip
 
 @onready var btn_helmet:  Button  = $ShopCanvas/ShopPanel/VBox/HelmetRow/BuyBtn
 @onready var lbl_helmet:  Label   = $ShopCanvas/ShopPanel/VBox/HelmetRow/StatusLbl
@@ -30,6 +35,8 @@ func _ready() -> void:
 	shop_panel.visible   = false
 	title_label.text = "⚒  " + shop_name
 	GameManager.gold_changed.connect(_refresh_ui)
+	KeybindManager.bindings_changed.connect(_refresh_input_hints)
+	_refresh_input_hints()
 
 func _process(_delta: float) -> void:
 	# 用 Input 轮询，绕过 CanvasLayer GUI 对事件的拦截
@@ -43,6 +50,13 @@ func _toggle_shop() -> void:
 	shop_panel.visible = _open
 	if _open:
 		_refresh_ui()
+
+func _refresh_input_hints() -> void:
+	prompt_label.text = "[%s] 购物" % KeybindManager.get_display_text("interact")
+	close_tip.text = "[ %s ] 开/关   [ %s ] 关闭" % [
+		KeybindManager.get_display_text("interact"),
+		KeybindManager.get_display_text("ui_cancel")
+	]
 
 # _dummy 用于兼容 gold_changed(amount: int) 信号签名
 func _refresh_ui(_dummy: int = 0) -> void:
@@ -59,6 +73,15 @@ func _refresh_ui(_dummy: int = 0) -> void:
 	else:
 		lbl_helmet.text  = "60 G"
 		btn_helmet.disabled = false
+
+	if shop_role == ROLE_MERCHANT:
+		lbl_suit.text = "需去工坊合成雪服"
+		btn_suit.disabled = true
+		lbl_board.text = "商人不升级雪板"
+		btn_board.disabled = true
+		lbl_goggles.text = "商人不升级雪镜"
+		btn_goggles.disabled = true
+		return
 
 	# ── 高级雪服 100G + 雪服碎片 ─────────────────────────
 	var s_has := EquipmentManager.has_equipment(EquipmentManager.Slot.SUIT)

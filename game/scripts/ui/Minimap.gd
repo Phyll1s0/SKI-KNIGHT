@@ -1,6 +1,6 @@
 extends CanvasLayer
 # Minimap — 右上角小地图（升级版）
-# Tab 键：显隐  |  +/- 键：缩放
+# 按键由 KeybindManager 管理：显隐 / 放大 / 缩小
 # 图标：S=存档  P=传送  E=装备拾取  K=技能拾取  ¥=商店  橙点=敌人
 
 const MINIMAP_ICON_PATH := "res://assets/sprites/ui/minimap_icons.png"
@@ -24,6 +24,7 @@ var _minimap_icon_sheet: Texture2D = null
 func _ready() -> void:
 	_minimap_icon_sheet = _load_optional_texture(MINIMAP_ICON_PATH)
 	draw_area.draw.connect(_on_draw)
+	KeybindManager.bindings_changed.connect(_on_bindings_changed)
 	call_deferred("_find_nodes")
 
 func _load_optional_texture(path: String) -> Texture2D:
@@ -40,14 +41,15 @@ func _load_optional_texture(path: String) -> Texture2D:
 	return null
 
 func _unhandled_input(event: InputEvent) -> void:
-	if event is InputEventKey and event.pressed and not event.echo:
-		match event.keycode:
-			KEY_TAB:
-				panel.visible = not panel.visible
-			KEY_EQUAL, KEY_KP_ADD:
-				_minimap_scale = minf(_minimap_scale + SCALE_STEP, SCALE_MAX)
-			KEY_MINUS, KEY_KP_SUBTRACT:
-				_minimap_scale = maxf(_minimap_scale - SCALE_STEP, SCALE_MIN)
+	if event.is_action_pressed("toggle_minimap"):
+		panel.visible = not panel.visible
+		get_viewport().set_input_as_handled()
+	elif event.is_action_pressed("minimap_zoom_in"):
+		_minimap_scale = minf(_minimap_scale + SCALE_STEP, SCALE_MAX)
+		get_viewport().set_input_as_handled()
+	elif event.is_action_pressed("minimap_zoom_out"):
+		_minimap_scale = maxf(_minimap_scale - SCALE_STEP, SCALE_MIN)
+		get_viewport().set_input_as_handled()
 
 func _find_nodes() -> void:
 	var players := get_tree().get_nodes_in_group("player")
@@ -142,7 +144,7 @@ func _on_draw() -> void:
 	if _area_name.length() > 0:
 		draw_area.draw_string(font, Vector2(5.0, MAP_HEIGHT - 14.0), _area_name, HORIZONTAL_ALIGNMENT_LEFT, -1, 8, Color(0.65, 0.85, 1.0, 0.85))
 
-	draw_area.draw_string(font, Vector2(5.0, MAP_HEIGHT - 4.0), "Tab:显隐  +/-:缩放", HORIZONTAL_ALIGNMENT_LEFT, -1, 7, Color(0.55, 0.55, 0.55, 0.6))
+	draw_area.draw_string(font, Vector2(5.0, MAP_HEIGHT - 4.0), _get_help_text(), HORIZONTAL_ALIGNMENT_LEFT, -1, 7, Color(0.55, 0.55, 0.55, 0.6))
 	draw_area.draw_rect(Rect2(Vector2.ZERO, Vector2(MAP_WIDTH, MAP_HEIGHT)), Color(0.5, 0.7, 1.0, 0.7), false, 1.5)
 
 func _draw_minimap_icon(icon_index: int, center: Vector2) -> void:
@@ -162,3 +164,13 @@ func _get_player_facing() -> float:
 
 func refresh() -> void:
 	call_deferred("_find_nodes")
+
+func _get_help_text() -> String:
+	return "%s:显隐  %s/%s:缩放" % [
+		KeybindManager.get_display_text("toggle_minimap"),
+		KeybindManager.get_display_text("minimap_zoom_in"),
+		KeybindManager.get_display_text("minimap_zoom_out")
+	]
+
+func _on_bindings_changed() -> void:
+	draw_area.queue_redraw()

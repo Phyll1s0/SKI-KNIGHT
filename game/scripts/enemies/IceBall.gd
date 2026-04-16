@@ -31,5 +31,5 @@ func _on_area_2d_body_entered(body: Node) -> void:
 	if body.is_in_group("enemy"):
 		return
 	if body.is_in_group("player"):
-		body.take_damage(damage, global_position)
+		body.take_damage(damage, global_position, "冰球炮弹")
 	queue_free()

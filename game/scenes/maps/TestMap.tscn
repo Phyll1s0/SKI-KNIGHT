@@ -63,6 +63,7 @@ points = PackedVector2Array(0, 0, 300, 0, 0, -150)
 ; ── Root ────────────────────────────────────────────────────────────────
 [node name="TestMap" type="Node2D"]
 script = ExtResource("2")
+area_title = "雪山入口"
 
 ; ── Background（雪山入口：晴空蓝白）─────────────────────────────────────
 [node name="Background" type="CanvasLayer" parent="."]

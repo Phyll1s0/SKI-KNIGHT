@@ -53,7 +53,16 @@ func load_save() -> bool:
 	GameManager.player_max_hp  = data.get("player_max_hp", 100)
 	GameManager.player_exp     = data.get("player_exp",    0)
 	GameManager.player_level   = data.get("player_level",  1)
-	GameManager.player_attack  = data.get("player_attack", 20)
+	GameManager.player_attack  = data.get("player_attack", GameManager.BASE_PLAYER_ATTACK)
+	GameManager.player_max_hp  = data.get("player_max_hp", GameManager.BASE_PLAYER_MAX_HP)
+	GameManager.player_hp      = data.get("player_hp",     GameManager.player_max_hp)
+	var legacy_max_hp: int = GameManager.legacy_expected_max_hp_for_level(GameManager.player_level)
+	if GameManager.player_max_hp == legacy_max_hp:
+		GameManager.player_max_hp = GameManager.expected_max_hp_for_level(GameManager.player_level)
+		GameManager.player_hp = min(GameManager.player_hp, GameManager.player_max_hp)
+	var legacy_attack: int = GameManager.legacy_expected_attack_for_level(GameManager.player_level)
+	if GameManager.player_attack == legacy_attack:
+		GameManager.player_attack = GameManager.expected_attack_for_level(GameManager.player_level)
 	GameManager.evolution_count = data.get("evolution_count", 0)
 	GameManager.has_double_jump = data.get("has_double_jump", false)
 	GameManager.gold               = data.get("gold", 0)
@@ -95,7 +104,7 @@ func load_save() -> bool:
 	GameManager.hp_changed.emit(GameManager.player_hp, GameManager.player_max_hp)
 
 	if data.has("current_scene"):
-		SceneManager.go_to(data["current_scene"])
+		SceneManager.go_to(data["current_scene"], SceneManager.SAVE_RESPAWN_POINT)
 	return true
 
 func has_save() -> bool:

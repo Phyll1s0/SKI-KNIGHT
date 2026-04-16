@@ -1,15 +1,18 @@
 extends StaticBody2D
 
 const _HIT_EFFECT := preload("res://scenes/effects/HitEffect.tscn")
+const _STAGE_SCALING := preload("res://scripts/systems/EnemyStageScaling.gd")
 
 # 冰球炮台：固定位置，朝玩家方向定时发射冰球弹丸
 # 帧定义：0=idle  1=charge（充能）  2=fire（开火）  3=dead（破损）
 
-@export var max_hp: int = 50
-@export var attack_damage: int = 12
-@export var fire_interval: float = 1.8   # 发射间隔（秒）
+@export var max_hp: int = 60
+@export var attack_damage: int = 15
+@export var fire_interval: float = 1.65   # 发射间隔（秒）
 @export var detect_range: float = 380.0  # 探测距离
-@export var exp_reward: int = 18
+@export var exp_reward: int = 20
+@export var gold_min: int = 1
+@export var gold_max: int = 2
 @export var iceball_scene: PackedScene = preload("res://scenes/enemies/IceBall.tscn")
 
 const FRAME_IDLE   := 0
@@ -32,12 +35,23 @@ var _charge_timer: float = 0.0
 @onready var muzzle: Marker2D = $Muzzle
 
 func _ready() -> void:
+	_apply_stage_scaling()
 	add_to_group("enemy")
 	_fire_timer = randf_range(0.0, fire_interval)
 	set_collision_layer_value(1, false)
 	set_collision_layer_value(3, true)
 	detect_area.set_collision_mask_value(1, false)
 	detect_area.set_collision_mask_value(2, true)
+
+func _apply_stage_scaling() -> void:
+	var multiplier: int = _STAGE_SCALING.resolve_multiplier(self)
+	if multiplier > 1:
+		max_hp *= multiplier
+		attack_damage *= multiplier
+		exp_reward *= multiplier
+		gold_min *= multiplier
+		gold_max *= multiplier
+	hp = max_hp
 
 func _process(delta: float) -> void:
 	if _is_dead:
@@ -82,9 +96,10 @@ func _do_fire() -> void:
 		sprite.frame = FRAME_FIRE
 		sprite.modulate = Color(2.0, 0.3, 0.3, 1.0)
 	# 生成冰球
-	var ball: Node2D = iceball_scene.instantiate()
+	var ball = iceball_scene.instantiate()
 	get_parent().add_child(ball)
 	ball.global_position = muzzle.global_position
+	ball.set("damage", attack_damage)
 	var dir := (_player.global_position - muzzle.global_position).normalized()
 	ball.init(dir)
 	# 炮管方向翻转（朝左时）
@@ -125,7 +140,8 @@ func _die() -> void:
 		sprite.frame = FRAME_DEAD
 		sprite.modulate = Color(0.5, 0.5, 0.5, 1.0)
 	GameManager.gain_exp(exp_reward)
-	GameManager.add_gold(randi_range(10, 20))
+	var gold_amount: int = randi_range(gold_min, gold_max)
+	GameManager.drop_gold(gold_amount, get_parent(), global_position)
 	GameManager.on_enemy_killed()
 	var tween := create_tween()
 	tween.tween_interval(0.3)

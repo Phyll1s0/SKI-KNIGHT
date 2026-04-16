@@ -18,8 +18,6 @@ func _ready() -> void:
 	add_to_group("equipment_pickup")
 	set_collision_mask_value(1, false)
 	set_collision_mask_value(2, true)
-	monitoring = true
-	monitorable = true
 	var eq_slot: int = slot
 	if not runtime_drop and SaveSystem.has_save() and EquipmentManager.has_unlocked(eq_slot, level):
 		queue_free()
@@ -30,15 +28,14 @@ func _ready() -> void:
 		pickup_delay = 0.45
 	_sync_visuals()
 	if pickup_delay > 0.0:
-		_can_pickup = false
-		monitoring = false
-		set_deferred("monitoring", false)
+		_set_pickup_enabled(false)
 		var t: SceneTreeTimer = get_tree().create_timer(pickup_delay)
 		t.timeout.connect(func():
 			if is_instance_valid(self):
-				_can_pickup = true
-				monitoring = true
+				_set_pickup_enabled(true)
 		)
+	else:
+		_set_pickup_enabled(true)
 	# 漂浮动画
 	var tween: Tween = create_tween().set_loops()
 	tween.tween_property(sprite, "position:y", -6.0, 0.6).set_trans(Tween.TRANS_SINE)
@@ -80,8 +77,15 @@ func _load_optional_texture(path: String) -> Texture2D:
 func _on_body_entered(body: Node) -> void:
 	_try_collect(body)
 
+func _set_pickup_enabled(enabled: bool) -> void:
+	_can_pickup = enabled
+	set_deferred("monitoring", enabled)
+	set_deferred("monitorable", enabled)
+
 func _try_collect(body: Node) -> void:
 	if _collected or not _can_pickup:
+		return
+	if runtime_drop and (GameManager.death_retry_pending or SceneManager.is_transitioning()):
 		return
 	if not body.is_in_group("player"):
 		return

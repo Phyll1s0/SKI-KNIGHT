@@ -7,21 +7,25 @@ const SKILL_GATE_ICON_PATH := "res://assets/sprites/ui/skill_gate_icon.png"
 @export_enum("ICE_BLADE:0", "PARALLEL_SKIING:1", "CARVING:2") var required_skill: int = 1
 @export var hint_text: String = "需要特定技能才能通过"
 
-@onready var collision: CollisionShape2D = $BlockCollision
-@onready var hint: Label = $HintLabel
-@onready var sprite: Sprite2D = $Sprite2D
+@onready var collision: CollisionShape2D = get_node_or_null("BlockCollision")
+@onready var hint: Label = get_node_or_null("HintLabel")
+@onready var sprite: Sprite2D = get_node_or_null("Sprite2D")
 
 var _hint_timer: float = 0.0
 
 func _ready() -> void:
 	var icon := _load_optional_texture(SKILL_GATE_ICON_PATH)
-	sprite.texture = icon
-	sprite.visible = icon != null
+	if sprite != null:
+		sprite.texture = icon
+		sprite.visible = icon != null
 	if SkillManager.has_skill(required_skill as SkillManager.Skill):
-		collision.set_deferred("disabled", true)
+		if collision != null:
+			collision.set_deferred("disabled", true)
+		if hint != null:
+			hint.visible = false
+	if hint != null:
+		hint.text = hint_text
 		hint.visible = false
-	hint.text = hint_text
-	hint.visible = false
 
 func _load_optional_texture(path: String) -> Texture2D:
 	if path.is_empty():
@@ -39,15 +43,18 @@ func _load_optional_texture(path: String) -> Texture2D:
 func _process(delta: float) -> void:
 	if _hint_timer > 0.0:
 		_hint_timer -= delta
-		if _hint_timer <= 0.0:
+		if _hint_timer <= 0.0 and hint != null:
 			hint.visible = false
 
 func _on_body_entered(body: Node) -> void:
 	if not body.is_in_group("player"):
 		return
 	if SkillManager.has_skill(required_skill as SkillManager.Skill):
-		collision.set_deferred("disabled", true)
-		hint.visible = false
+		if collision != null:
+			collision.set_deferred("disabled", true)
+		if hint != null:
+			hint.visible = false
 	else:
-		hint.visible = true
+		if hint != null:
+			hint.visible = true
 		_hint_timer = 2.5

@@ -10,7 +10,11 @@ func _ready() -> void:
 func _on_body_entered(body: Node) -> void:
 	if not body.is_in_group("player"):
 		return
-	GameManager.respawn_position = global_position
+	var respawn_pos: Vector2 = global_position
+	if body is Node2D:
+		respawn_pos.y = (body as Node2D).global_position.y
+	GameManager.respawn_position = respawn_pos
+	SaveSystem.save()
 	saved_label.visible = true
 	var timer: SceneTreeTimer = get_tree().create_timer(2.0)
 	timer.timeout.connect(func(): saved_label.visible = false)

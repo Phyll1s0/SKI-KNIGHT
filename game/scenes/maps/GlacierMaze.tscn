@@ -12,7 +12,7 @@
 [ext_resource type="PackedScene" path="res://scenes/systems/SkillPickup.tscn" id="10"]
 [ext_resource type="PackedScene" path="res://scenes/enemies/IceLynx.tscn" id="11"]
 [ext_resource type="PackedScene" path="res://scenes/systems/Shop.tscn" id="12"]
-[ext_resource type="PackedScene" path="res://scenes/enemies/FrozenGuard.tscn" id="13"]
+[ext_resource type="PackedScene" path="res://scenes/systems/CableCar.tscn" id="13"]
 
 ; ======================================================================
 ; 冰川迷宫 3400px x 1800px
@@ -66,7 +66,13 @@ size = Vector2(40, 1200)
 size = Vector2(900, 20)
 
 [sub_resource type="RectangleShape2D" id="Sh_secret"]
-size = Vector2(400, 20)
+size = Vector2(500, 20)
+
+[sub_resource type="RectangleShape2D" id="Sh_boss_gate"]
+size = Vector2(28, 220)
+
+[sub_resource type="RectangleShape2D" id="Sh_boss_gate_trigger"]
+size = Vector2(180, 220)
 
 [sub_resource type="RectangleShape2D" id="Sh_plat_xl"]
 size = Vector2(260, 20)
@@ -101,6 +107,12 @@ points = PackedVector2Array(0, 0, 260, 0, 260, -320)
 [sub_resource type="ConvexPolygonShape2D" id="Sh_slope_sl"]
 points = PackedVector2Array(0, 0, 240, 0, 0, -300)
 
+[sub_resource type="ConvexPolygonShape2D" id="Sh_slope_exit_lower"]
+points = PackedVector2Array(0, 0, 260, 0, 260, -160)
+
+[sub_resource type="ConvexPolygonShape2D" id="Sh_slope_exit_upper"]
+points = PackedVector2Array(-130, -10, 130, -10, 130, 10, -130, 10)
+
 ; 冰柱平台（超滑悬空小台，跑酷挑战段）
 [sub_resource type="RectangleShape2D" id="Sh_pillar_a"]
 size = Vector2(60, 20)
@@ -133,6 +145,8 @@ size = Vector2(300, 20)
 
 [node name="GlacierMaze" type="Node2D"]
 script = ExtResource("2")
+camera_limit_right = 3400
+area_title = "冰川迷宫"
 
 ; ── Background（冰川迷宫：深蓝冰穴）─────────────────────────────────────
 [node name="Background" type="CanvasLayer" parent="."]
@@ -154,7 +168,7 @@ script = ExtResource("8")
 point_name = "DefaultSpawn"
 
 [node name="SpawnFromBlizzard" type="Marker2D" parent="."]
-position = Vector2(3280, 140)
+position = Vector2(3290, 140)
 script = ExtResource("8")
 point_name = "FromBlizzard"
 
@@ -303,6 +317,44 @@ shape = SubResource("Sh_slope_sl")
 polygon = PackedVector2Array(0, 0, 240, 0, 0, -300)
 color = Color(0.42, 0.55, 0.78, 1.0)
 
+; ─ 右侧补充回爬坡道：从底层出口段爬回 Boss / 传送门上层 ───────────────
+[node name="RightClimbSlopeLower" type="StaticBody2D" parent="."]
+position = Vector2(3120, 840)
+physics_material_override = SubResource("PhysMat_upper")
+[node name="Col" type="CollisionShape2D" parent="RightClimbSlopeLower"]
+shape = SubResource("Sh_slope_exit_lower")
+
+[node name="Visual" type="Polygon2D" parent="RightClimbSlopeLower"]
+polygon = PackedVector2Array(0, 0, 260, 0, 260, -160)
+color = Color(0.47, 0.62, 0.84, 1.0)
+
+[node name="RightClimbLanding" type="StaticBody2D" parent="."]
+position = Vector2(3250, 690)
+physics_material_override = SubResource("PhysMat_upper")
+[node name="Col" type="CollisionShape2D" parent="RightClimbLanding"]
+shape = SubResource("Sh_plat_md")
+
+[node name="Visual" type="Polygon2D" parent="RightClimbLanding"]
+polygon = PackedVector2Array(-70.0, -10.0, 70.0, -10.0, 70.0, 10.0, -70.0, 10.0)
+color = Color(0.47, 0.62, 0.84, 1.0)
+
+[node name="RightCableCar" parent="." instance=ExtResource("13")]
+position = Vector2(3250, 660)
+scale = Vector2(0.41, 1)
+travel_offset = Vector2(0, -480)
+speed = 118.0
+wait_time = 1.0
+
+[node name="RightClimbSlopeUpper" type="StaticBody2D" parent="."]
+position = Vector2(3030, 180)
+physics_material_override = SubResource("PhysMat_upper")
+[node name="Col" type="CollisionShape2D" parent="RightClimbSlopeUpper"]
+shape = SubResource("Sh_slope_exit_upper")
+
+[node name="Visual" type="Polygon2D" parent="RightClimbSlopeUpper"]
+polygon = PackedVector2Array(-130.0, -10.0, 130.0, -10.0, 130.0, 10.0, -130.0, 10.0)
+color = Color(0.47, 0.62, 0.84, 1.0)
+
 ; ─ 中层平台 (y=560~740) ───────────────────────────────────────────────
 [node name="MidPlatA" type="StaticBody2D" parent="."]
 position = Vector2(440, 740)
@@ -370,15 +422,15 @@ color = Color(0.45, 0.58, 0.80, 1.0)
 [node name="MidPlatH" type="StaticBody2D" parent="."]
 position = Vector2(2820, 560)
 [node name="Col" type="CollisionShape2D" parent="MidPlatH"]
-shape = SubResource("Sh_plat_md")
+shape = SubResource("Sh_plat_lg")
 
 [node name="Visual" type="Polygon2D" parent="MidPlatH"]
-polygon = PackedVector2Array(-70.0, -10.0, 70.0, -10.0, 70.0, 10.0, -70.0, 10.0)
+polygon = PackedVector2Array(-100.0, -10.0, 100.0, -10.0, 100.0, 10.0, -100.0, 10.0)
 color = Color(0.45, 0.58, 0.80, 1.0)
 
 ; ─ 高层跳板阶梯 → 走廊 (y=280~500) ──────────────────────────────────
 [node name="HighStepA" type="StaticBody2D" parent="."]
-position = Vector2(640, 500)
+position = Vector2(640, 550)
 [node name="Col" type="CollisionShape2D" parent="HighStepA"]
 shape = SubResource("Sh_plat_xs")
 
@@ -441,14 +493,49 @@ shape = SubResource("Sh_plat_xs")
 polygon = PackedVector2Array(-34.0, -10.0, 34.0, -10.0, 34.0, 10.0, -34.0, 10.0)
 color = Color(0.45, 0.58, 0.80, 1.0)
 
+[node name="BossRoomBackdrop" type="Polygon2D" parent="."]
+position = Vector2(3100, 100)
+polygon = PackedVector2Array(-260.0, -155.0, 260.0, -155.0, 260.0, 120.0, -260.0, 120.0)
+color = Color(0.28, 0.36, 0.50, 0.56)
+
+[node name="BossRoomCeiling" type="StaticBody2D" parent="."]
+position = Vector2(3100, -20)
+[node name="Col" type="CollisionShape2D" parent="BossRoomCeiling"]
+shape = SubResource("Sh_secret")
+
+[node name="Visual" type="Polygon2D" parent="BossRoomCeiling"]
+polygon = PackedVector2Array(-250.0, -10.0, 250.0, -10.0, 250.0, 10.0, -250.0, 10.0)
+color = Color(0.60, 0.72, 0.90, 1.0)
+
+[node name="BossRoomEntranceTrigger" type="Area2D" parent="."]
+collision_layer = 0
+collision_mask = 2
+position = Vector2(2990, 100)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="BossRoomEntranceTrigger"]
+shape = SubResource("Sh_boss_gate_trigger")
+
+[node name="BossRoomGate" type="StaticBody2D" parent="."]
+position = Vector2(2862, 100)
+
+[node name="Col" type="CollisionShape2D" parent="BossRoomGate"]
+visible = false
+shape = SubResource("Sh_boss_gate")
+disabled = true
+
+[node name="Visual" type="Polygon2D" parent="BossRoomGate"]
+visible = false
+polygon = PackedVector2Array(-14.0, -110.0, 14.0, -110.0, 14.0, 110.0, -14.0, 110.0)
+color = Color(0.78, 0.90, 1.0, 0.82)
+
 [node name="SecretRoom" type="StaticBody2D" parent="."]
-position = Vector2(3200, 180)
+position = Vector2(3100, 180)
 [node name="Col" type="CollisionShape2D" parent="SecretRoom"]
 shape = SubResource("Sh_secret")
 
 [node name="Visual" type="Polygon2D" parent="SecretRoom"]
-polygon = PackedVector2Array(-200.0, -10.0, 200.0, -10.0, 200.0, 10.0, -200.0, 10.0)
-color = Color(0.45, 0.58, 0.80, 1.0)
+polygon = PackedVector2Array(-250.0, -10.0, 250.0, -10.0, 250.0, 10.0, -250.0, 10.0)
+color = Color(0.68, 0.79, 0.94, 1.0)
 
 ; ─ 冰柱跳板段（x=1560~1800, y≈700，三块超滑窄冰台，凌空穿线挑战）──
 ; 玩家需在超滑小台上连续精准跳跃；SnowmanPillar 踩在第二块上
@@ -594,25 +681,25 @@ position = Vector2(1685, 661)
 position = Vector2(2250, 870)
 ; 改到 IcePatchB 左侧平段，避免埋进 SlopePreIceB 斜坡体
 
-; ── 冰区B段 + FrozenGuard1 精英 (x=1900~2500) ──
-[node name="FrozenGuard1" parent="." instance=ExtResource("13")]
+; ── 冰区B段守卫编组 (x=1900~2500) ──
+[node name="Snowman4" parent="." instance=ExtResource("4")]
 position = Vector2(2020, 858)
-; 冰区B入口精英守卫，高攻防，冰区摩擦低难以闪避
+; 冰区B入口近战守卫，和后方炮台形成夹击
 
 [node name="Snowman5" parent="." instance=ExtResource("4")]
 position = Vector2(2150, 858)
 
-; ── FloorC段 + FrozenGuard2 精英 (x=2500~3100) ──
+; ── FloorC段守卫编组 (x=2500~3100) ──
 [node name="Snowman7" parent="." instance=ExtResource("4")]
 position = Vector2(2560, 858)
 
-[node name="FrozenGuard2" parent="." instance=ExtResource("13")]
-position = Vector2(2955, 858)
-; Boss 前终极门卫，击败后才面对 IceLynx
+[node name="Snowman6" parent="." instance=ExtResource("4")]
+position = Vector2(2760, 858)
+; 右下补给区前移，守卫后撤，避免堵住存档点和商人
 
 [node name="Turret4" parent="." instance=ExtResource("5")]
-position = Vector2(3040, 840)
-; 改到 IcePatchC 单独冰面上，避开 FloorExit 与 IcePatchC 的重叠区
+position = Vector2(2600, 270)
+; 改到 HighExitStepA 顶部，避免覆盖右下补给区
 
 ; ── 中层平台守卫 ──
 [node name="SnowmanMid1" parent="." instance=ExtResource("4")]
@@ -643,16 +730,10 @@ position = Vector2(840, 1550)
 ; 站在 CaveShelf 上 (CaveShelf 顶 y=1570, 炮台底=1550+20=1570 ✓)
 
 ; ─ 道具 ─────────────────────────────────────────────────────────────
-[node name="GogglesPickup" parent="." instance=ExtResource("7")]
-position = Vector2(2080, 526)
-slot = 1
-level = 1
-label_text = "雪镜"
-
 ; 头盔已移前，需到冰川迷宫商人处花金币购买
 
 [node name="IceBladePickup" parent="." instance=ExtResource("10")]
-position = Vector2(3200, 144)
+position = Vector2(3230, 144)
 skill = 0
 label_text = "冰刃投掷解锁！"
 
@@ -662,14 +743,14 @@ position = Vector2(250, 860)
 ; 商人《冰川迷宫·铁匙商人》（存档点旁）
 [node name="ShopMerchant" parent="." instance=ExtResource("12")]
 position = Vector2(380, 860)
-[node name="SavePoint2" parent="." instance=ExtResource("9")]
-position = Vector2(1600, 860)
-
+shop_role = 0
 [node name="SavePoint3" parent="." instance=ExtResource("9")]
-position = Vector2(2900, 860)
+position = Vector2(2940, 836)
 
-[node name="SavePoint4" parent="." instance=ExtResource("9")]
-position = Vector2(1080, 1350)
+[node name="ShopMerchantRight" parent="." instance=ExtResource("12")]
+position = Vector2(3040, 860)
+shop_name = "冰川迷宫·右侧补给商人"
+shop_role = 0
 
 ; ─ 传送门 ────────────────────────────────────────────────────────────
 [node name="PortalBack" parent="." instance=ExtResource("6")]
@@ -678,9 +759,11 @@ target_scene = "res://scenes/maps/TestMap.tscn"
 spawn_point_name = "FromGlacier"
 
 [node name="IceLynxBoss" parent="." instance=ExtResource("11")]
-position = Vector2(3050, 140)
+position = Vector2(3150, 140)
 
 [node name="PortalToBlizzard" parent="." instance=ExtResource("6")]
-position = Vector2(3300, 85)
+position = Vector2(3310, 85)
 target_scene = "res://scenes/maps/BlizzardHighlands.tscn"
-spawn_point_name = "DefaultSpawn"
+spawn_point_name = "FromGlacier"
+
+[connection signal="body_entered" from="BossRoomEntranceTrigger" to="." method="_on_boss_room_trigger_body_entered"]

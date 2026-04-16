@@ -1,7 +1,7 @@
 extends CharacterBody2D
 
 # ── Stats ──────────────────────────────────────────────────
-@export var max_hp: int = 120
+@export var max_hp: int = 100
 var hp: int = max_hp
 
 # ── Movement ───────────────────────────────────────────────
@@ -14,16 +14,16 @@ var hp: int = max_hp
 @export var gravity: float = 980.0
 
 # ── Attack ─────────────────────────────────────────────────
-@export var attack_damage: int = 22
+@export var attack_damage: int = 20
 @export var attack_cooldown: float = 0.55
-@export var attack_forward_reach: float = 60.0
+@export var attack_forward_reach: float = 90.0
 @export var attack_vertical_size: float = 40.0
 
 var _attack_timer: float = 0.0
 var _is_attacking: bool = false
 
 # ── Ice Blade skill ────────────────────────────────────────
-@export var ice_blade_damage: int = 15
+@export var ice_blade_damage: int = 20
 @export var ice_blade_cooldown: float = 0.8
 var _skill_timer: float = 0.0
 const ICE_BLADE_SCENE := preload("res://scenes/player/IceBlade.tscn")
@@ -33,6 +33,7 @@ const _EQUIPMENT_PICKUP_SCENE := preload("res://scenes/systems/EquipmentPickup.t
 # ── Hit / invincibility ────────────────────────────────────
 @export var invincible_duration: float = 1.2
 @export var knockback_force: float = 200.0
+@export var log_damage_sources: bool = true
 var _invincible_timer: float = 0.0
 var _is_dead: bool = false
 var _respawn_grace: bool = false  # 复活无敌期间不播 hurt 动画
@@ -48,6 +49,9 @@ var _attack_hit_bodies: Dictionary = {}
 
 # 冲撞速度阈值：超过此速度时攻击会触发冲撞伤害加成
 @export var collision_speed_threshold: float = 350.0
+@export var helmet_collision_forward_range: float = 56.0
+@export var helmet_collision_vertical_range: float = 52.0
+var _helmet_query_shape: RectangleShape2D = RectangleShape2D.new()
 
 # ── Node refs ──────────────────────────────────────────────
 @onready var sprite: Sprite2D = $Sprite2D
@@ -76,6 +80,8 @@ func _ready() -> void:
 func _on_game_hp_changed(current: int, maximum: int) -> void:
 	max_hp = maximum
 	hp = current
+	attack_damage = GameManager.player_attack
+	ice_blade_damage = GameManager.player_attack
 
 func _on_equipment_changed(_slot: int, _level: int) -> void:
 	_apply_equipment_stats()
@@ -98,6 +104,12 @@ func _update_attack_hitbox() -> void:
 	if shape != null:
 		shape.size = Vector2(total_width, attack_vertical_size)
 	attack_area.position = Vector2(center_offset * _facing, 0.0)
+
+func _get_attack_damage_value() -> int:
+	return int(round(float(attack_damage) * (1.0 + EquipmentManager.attack_damage_bonus())))
+
+func _get_ice_blade_damage_value() -> int:
+	return int(round(float(ice_blade_damage) * (1.0 + EquipmentManager.attack_damage_bonus())))
 
 func _physics_process(delta: float) -> void:
 	if _is_dead:
@@ -153,6 +165,11 @@ func _handle_movement(delta: float) -> void:
 	if is_on_floor():
 		var fn := get_floor_normal()   # 地面法线，ny < 0（指向玩家）
 		var slope_x := absf(fn.x)      # 0 = 平地，越大坡越陡
+		var can_parallel_brake: bool = SkillManager.has_skill(SkillManager.Skill.PARALLEL_SKIING) \
+			and Input.is_action_pressed("brake") and slope_x > 0.08
+		if can_parallel_brake:
+			velocity.x = 0.0
+			return
 
 		if slope_x > 0.08:   # 在斜坡上
 			# 下坡切线：旋转 fn 使 Y > 0（指向屏幕下方 = 下坡）
@@ -185,12 +202,11 @@ func _handle_movement(delta: float) -> void:
 		if input_dir != 0:
 			velocity.x = move_toward(velocity.x, input_dir * walk_speed, air_ctrl * delta)
 
-# ── Body collision damage (头盔撞击) ────────────────────────
-# 只有装备头盔且滑行速度超过阈値时，擞身撞击敌人才会造成伤害
-var _collision_hit_set: Dictionary = {}   # 防止同一川尷1环内重复伤害
+# ── Helmet collision damage (头盔撞击) ─────────────────────
+# 玩家不与敌人体发生物理碰撞，因此这里用前向近距离检测来结算冲撞伤害
+var _collision_hit_set: Dictionary = {}
 
 func _handle_body_collision() -> void:
-	# 无头盔：不产生撞击伤害
 	if not EquipmentManager.has_equipment(EquipmentManager.Slot.HELMET):
 		_collision_hit_set.clear()
 		return
@@ -198,21 +214,38 @@ func _handle_body_collision() -> void:
 	if spd < collision_speed_threshold:
 		_collision_hit_set.clear()
 		return
-	for i in get_slide_collision_count():
-		var col := get_slide_collision(i)
-		var body := col.get_collider()
-		if body == null:
+	var move_dir := signf(velocity.x)
+	if is_zero_approx(move_dir):
+		return
+	_helmet_query_shape.size = Vector2(helmet_collision_forward_range, helmet_collision_vertical_range)
+	var query := PhysicsShapeQueryParameters2D.new()
+	query.shape = _helmet_query_shape
+	query.transform = Transform2D(0.0, global_position + Vector2(move_dir * (helmet_collision_forward_range * 0.5 + 16.0), 0.0))
+	query.collide_with_bodies = true
+	query.collide_with_areas = false
+	query.collision_mask = 1 << 2
+	query.exclude = [get_rid()]
+	for result in get_world_2d().direct_space_state.intersect_shape(query, 16):
+		var enemy: Node = result.get("collider")
+		if not is_instance_valid(enemy):
 			continue
-		if not body.is_in_group("enemy"):
+		if not (enemy is Node2D):
 			continue
-		if _collision_hit_set.has(body):
-			continue   # 这川尷已经击中过
-		_collision_hit_set[body] = true
+		if _collision_hit_set.has(enemy):
+			continue
+		if not enemy.has_method("take_damage"):
+			continue
+		var enemy_pos: Vector2 = (enemy as Node2D).global_position
+		var to_enemy: Vector2 = enemy_pos - global_position
+		if to_enemy.x * move_dir < 0.0:
+			continue
+		if absf(to_enemy.x) > helmet_collision_forward_range:
+			continue
+		if absf(to_enemy.y) > helmet_collision_vertical_range:
+			continue
+		_collision_hit_set[enemy] = true
 		var dmg := int(float(attack_damage) * EquipmentManager.collision_damage_mult())
-		body.take_damage(dmg, global_position)
-	# 滑出高速区间后清空记录，允许下次撞击
-	if spd < collision_speed_threshold * 0.6:
-		_collision_hit_set.clear()
+		enemy.take_damage(dmg, global_position)
 
 # ── Jump ───────────────────────────────────────────────────
 var _double_jump_used: bool = false
@@ -261,7 +294,7 @@ func _try_hit_attack_body(body: Node) -> void:
 	if _attack_hit_bodies.has(body):
 		return
 	_attack_hit_bodies[body] = true
-	body.take_damage(attack_damage, global_position)
+	body.take_damage(_get_attack_damage_value(), global_position)
 
 # ── Slope detection (仅用于 _update_sprite 層级判断) ──────────────
 func _update_slope_info() -> void:
@@ -306,12 +339,14 @@ func _play_anim(anim_name: String) -> void:
 signal respawn_countdown(seconds_left: int)
 signal respawned
 # ── Hit / Death ────────────────────────────────────────────
-func take_damage(amount: int, hit_source_position: Vector2 = Vector2.ZERO) -> void:
+func take_damage(amount: int, hit_source_position: Vector2 = Vector2.ZERO, source_name: String = "") -> void:
 	if _invincible_timer > 0.0 or _is_dead:
 		return
-	GameManager.take_damage(amount)
+	var final_damage: int = _get_incoming_damage_value(amount, source_name)
+	GameManager.take_damage(final_damage)
 	hp = GameManager.player_hp
 	_invincible_timer = invincible_duration
+	_log_damage_source(final_damage, hit_source_position, source_name)
 
 	# Knockback away from damage source
 	if hit_source_position != Vector2.ZERO:
@@ -325,12 +360,39 @@ func take_damage(amount: int, hit_source_position: Vector2 = Vector2.ZERO) -> vo
 	if GameManager.player_hp <= 0:
 		die()
 
+func _get_incoming_damage_value(amount: int, source_name: String) -> int:
+	var final_damage: int = amount
+	if _is_collision_damage_source(source_name):
+		var reduction: float = EquipmentManager.collision_damage_reduction()
+		if reduction > 0.0:
+			final_damage = maxi(1, int(round(float(amount) * (1.0 - reduction))))
+	return final_damage
+
+func _is_collision_damage_source(source_name: String) -> bool:
+	return source_name.contains("碰撞") or source_name.contains("冲撞")
+
+func _log_damage_source(amount: int, hit_source_position: Vector2, source_name: String) -> void:
+	if not log_damage_sources:
+		return
+	var scene_name: String = get_tree().current_scene.name if get_tree().current_scene != null else "UnknownScene"
+	var source_label: String = source_name if not source_name.is_empty() else "未知来源"
+	var source_pos_text: String = "n/a"
+	if hit_source_position != Vector2.ZERO:
+		source_pos_text = "(%.1f, %.1f)" % [hit_source_position.x, hit_source_position.y]
+	print("[PlayerDamage] scene=", scene_name,
+		" source=", source_label,
+		" amount=", amount,
+		" hp=", hp, "/", max_hp,
+		" player_pos=", global_position,
+		" source_pos=", source_pos_text)
+
 func die(fell_into_pit: bool = false) -> void:
 	if _is_dead:
 		return
 	_is_dead = true
 	GameManager.begin_death_retry_state()
-	_drop_equipped_items(fell_into_pit)
+	if _should_drop_equipment_on_death():
+		_drop_equipped_items(fell_into_pit)
 	SaveSystem.save()
 	velocity = Vector2.ZERO
 	respawn_countdown.emit(1)
@@ -347,6 +409,13 @@ func die(fell_into_pit: bool = false) -> void:
 	await tween.finished
 	GameManager.clear_death_retry_state()
 	respawn()
+
+func _should_drop_equipment_on_death() -> bool:
+	var current_scene: Node = get_tree().current_scene
+	if current_scene == null:
+		return false
+	var scene_path := String(current_scene.scene_file_path)
+	return scene_path == "res://scenes/maps/GlacierMaze.tscn" or current_scene.name == "GlacierMaze"
 
 func _drop_equipped_items(fell_into_pit: bool) -> void:
 	var items := EquipmentManager.get_equipped_items()
@@ -372,34 +441,38 @@ func _drop_equipped_items(fell_into_pit: bool) -> void:
 		pickup.global_position = drop_pos
 
 func respawn() -> void:
-	# 确定复活位置
 	GameManager.clear_death_retry_state()
-	var pos: Vector2 = GameManager.respawn_position
-	if pos == Vector2.ZERO:
-		# 未走到任何存档点，找 DefaultSpawn
-		for node in get_tree().get_nodes_in_group("spawn_point"):
-			pos = node.global_position
-			break
-		if pos == Vector2.ZERO:
-			pos = Vector2(200, 656)   # 绝对备用
-
-	global_position = pos
 	velocity = Vector2.ZERO
-
-	# 恢复状态（同步来自 GameManager 的 max_hp，包含升级加成）
+	attack_area.monitoring = false
+	_is_attacking = false
+	_attack_hit_bodies.clear()
+	_collision_hit_set.clear()
 	_is_dead = false
 	_respawn_grace = true
-	_invincible_timer = 2.0   # 复活后 2 秒无敌
+	_invincible_timer = 2.0
 	max_hp = GameManager.player_max_hp
 	hp = max_hp
 	GameManager.player_hp = hp
 	GameManager.hp_changed.emit(hp, max_hp)
 
-	# 恢复外观（kill any ongoing tween first）
+	var current_scene: Node = get_tree().current_scene
+	if current_scene != null and not String(current_scene.scene_file_path).is_empty():
+		var spawn_target: String = SceneManager.SAVE_RESPAWN_POINT if GameManager.respawn_position != Vector2.ZERO else "DefaultSpawn"
+		SceneManager.go_to(String(current_scene.scene_file_path), spawn_target)
+		return
+
+	var pos: Vector2 = GameManager.respawn_position
+	if pos == Vector2.ZERO:
+		for node in get_tree().get_nodes_in_group("spawn_point"):
+			pos = node.global_position
+			break
+		if pos == Vector2.ZERO:
+			pos = Vector2(200, 656)
+	global_position = pos
 	if sprite:
 		sprite.modulate = Color(1, 1, 1, 1)
-		sprite.scale = Vector2(0.33, 0.33)   # 与 Player.tscn 一致
-
+		sprite.scale = Vector2(0.33, 0.33)
+	apply_floor_snap()
 	respawned.emit()
 
 func _start_blink() -> void:
@@ -429,10 +502,11 @@ func _fire_ice_blade() -> void:
 	get_parent().add_child(blade)
 	blade.global_position = global_position
 	var dir := Vector2(float(_facing), 0.0)
+	var blade_damage: int = _get_ice_blade_damage_value()
 	# 雪镜二级：额外斜45°第二刀
-	blade.init(dir, ice_blade_damage)
+	blade.init(dir, blade_damage)
 	if EquipmentManager.has_equipment(EquipmentManager.Slot.GOGGLES, 2):
 		var blade2: Node2D = ICE_BLADE_SCENE.instantiate()
 		get_parent().add_child(blade2)
 		blade2.global_position = global_position
-		blade2.init(Vector2(float(_facing) * 0.707, -0.707), ice_blade_damage)
+		blade2.init(Vector2(float(_facing) * 0.707, -0.707), blade_damage)

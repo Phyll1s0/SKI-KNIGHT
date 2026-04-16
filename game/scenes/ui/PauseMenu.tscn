@@ -1,0 +1,53 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/ui/PauseMenu.gd" id="1"]
+[ext_resource type="PackedScene" path="res://scenes/ui/KeybindSettings.tscn" id="2"]
+
+[node name="PauseMenu" type="Control"]
+script = ExtResource("1")
+anchor_right = 1.0
+anchor_bottom = 1.0
+process_mode = 3
+
+[node name="BG" type="ColorRect" parent="."]
+anchor_right = 1.0
+anchor_bottom = 1.0
+color = Color(0.0, 0.0, 0.0, 0.68)
+
+[node name="VBox" type="VBoxContainer" parent="."]
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -160.0
+offset_top = -120.0
+offset_right = 160.0
+offset_bottom = 120.0
+theme_override_constants/separation = 20
+
+[node name="Title" type="Label" parent="VBox"]
+text = "暂停中"
+horizontal_alignment = 1
+theme_override_colors/font_color = Color(0.6, 0.85, 1.0, 1.0)
+theme_override_font_sizes/font_size = 38
+
+[node name="ContinueBtn" type="Button" parent="VBox"]
+text = "继续游戏"
+custom_minimum_size = Vector2(320, 48)
+theme_override_font_sizes/font_size = 18
+
+[node name="SettingsBtn" type="Button" parent="VBox"]
+text = "按键设置"
+custom_minimum_size = Vector2(320, 48)
+theme_override_font_sizes/font_size = 18
+
+[node name="MenuBtn" type="Button" parent="VBox"]
+text = "保存并返回主菜单"
+custom_minimum_size = Vector2(320, 48)
+theme_override_font_sizes/font_size = 18
+
+[node name="KeybindSettings" parent="." instance=ExtResource("2")]
+
+[connection signal="pressed" from="VBox/ContinueBtn" to="." method="_on_continue_pressed"]
+[connection signal="pressed" from="VBox/SettingsBtn" to="." method="_on_settings_pressed"]
+[connection signal="pressed" from="VBox/MenuBtn" to="." method="_on_menu_pressed"]

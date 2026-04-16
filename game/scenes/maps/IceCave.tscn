@@ -11,6 +11,8 @@
 [ext_resource type="PackedScene" path="res://scenes/systems/SkillGate.tscn" id="9"]
 [ext_resource type="Script" path="res://scripts/systems/SpawnPoint.gd" id="10"]
 [ext_resource type="PackedScene" path="res://scenes/systems/EquipmentPickup.tscn" id="11"]
+[ext_resource type="PackedScene" path="res://scenes/enemies/ArmoredIceBear.tscn" id="12"]
+[ext_resource type="PackedScene" path="res://scenes/enemies/AvalancheGiant.tscn" id="13"]
 
 ; ====================================================================
 ; 地下冰窟 4200px x 1400px
@@ -94,6 +96,8 @@ points = PackedVector2Array(0, 0, 160, 0, 160, -440)
 
 [node name="IceCave" type="Node2D"]
 script = ExtResource("2")
+enemy_stage_multiplier = 3
+area_title = "地下冰窟"
 
 [node name="HUD" parent="." instance=ExtResource("3")]
 
@@ -309,17 +313,6 @@ position = Vector2(2300, 560)
 [node name="Col" type="CollisionShape2D" parent="UpperExitB"]
 shape = SubResource("Sh_stalac")
 
-; ─ 卡宾技能门 + 技能拾取 ──────────────────────────────────────
-[node name="CarvingGate" parent="." instance=ExtResource("9")]
-position = Vector2(3000, 1020)
-required_skill = 2
-hint_text = "需要《卡宾》技能"
-
-[node name="CarvingPickup" parent="." instance=ExtResource("8")]
-position = Vector2(3400, 1060)
-skill = 2
-label_text = "卡宾技能解锁！"
-
 ; 上层廊道奖励（高级装备：护目镜二级）
 [node name="Goggles2Pickup" parent="." instance=ExtResource("11")]
 position = Vector2(1880, 466)
@@ -351,6 +344,9 @@ position = Vector2(600, 760)
 [node name="Turret1" parent="." instance=ExtResource("5")]
 position = Vector2(900, 758)
 
+[node name="ArmoredIceBear1" parent="." instance=ExtResource("12")]
+position = Vector2(1180, 758)
+
 ; 中层 B段
 [node name="Snowman3" parent="." instance=ExtResource("4")]
 position = Vector2(1400, 758)
@@ -372,6 +368,9 @@ position = Vector2(1900, 1058)
 [node name="SnowmanDeep3" parent="." instance=ExtResource("4")]
 position = Vector2(2250, 1058)
 
+[node name="ArmoredIceBear2" parent="." instance=ExtResource("12")]
+position = Vector2(2380, 1058)
+
 [node name="SnowmanDeep4" parent="." instance=ExtResource("4")]
 position = Vector2(2600, 1058)
 
@@ -384,6 +383,9 @@ position = Vector2(3150, 1058)
 
 [node name="TurretDeep3" parent="." instance=ExtResource("5")]
 position = Vector2(3350, 1058)
+
+[node name="ArmoredIceBear3" parent="." instance=ExtResource("12")]
+position = Vector2(3520, 758)
 
 ; 中层出口段
 [node name="Snowman5" parent="." instance=ExtResource("4")]
@@ -412,3 +414,6 @@ spawn_point_name = "FromIceCave"
 position = Vector2(4160, 305)
 target_scene = "res://scenes/maps/SnowyPeak.tscn"
 spawn_point_name = "DefaultSpawn"
+
+[node name="AvalancheGiantBoss" parent="." instance=ExtResource("13")]
+position = Vector2(3920, 758)

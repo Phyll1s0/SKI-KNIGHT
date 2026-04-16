@@ -1,6 +1,7 @@
 [gd_scene format=3 uid="uid://cx8ildmt1114h"]
 
 [ext_resource type="Script" uid="uid://dkunsvvc8pucy" path="res://scripts/ui/MainMenu.gd" id="1"]
+[ext_resource type="PackedScene" path="res://scenes/ui/KeybindSettings.tscn" id="2"]
 
 [node name="MainMenu" type="Control" unique_id=1099399966]
 layout_mode = 3
@@ -67,13 +68,22 @@ theme_override_colors/font_color = Color(1.0, 0.4, 0.4, 0.8)
 text = "删除存档"
 visible = false
 
+[node name="SettingsBtn" type="Button" parent="VBox"]
+custom_minimum_size = Vector2(280, 48)
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+text = "按键设置"
+
 [node name="QuitBtn" type="Button" parent="VBox" unique_id=912353441]
 custom_minimum_size = Vector2(280, 48)
 layout_mode = 2
 theme_override_font_sizes/font_size = 20
 text = "退出"
 
+[node name="KeybindSettings" parent="." instance=ExtResource("2")]
+
 [connection signal="pressed" from="VBox/ContinueBtn" to="." method="_on_continue_pressed"]
 [connection signal="pressed" from="VBox/StartBtn" to="." method="_on_start_pressed"]
 [connection signal="pressed" from="VBox/DeleteBtn" to="." method="_on_delete_pressed"]
+[connection signal="pressed" from="VBox/SettingsBtn" to="." method="_on_settings_pressed"]
 [connection signal="pressed" from="VBox/QuitBtn" to="." method="_on_quit_pressed"]

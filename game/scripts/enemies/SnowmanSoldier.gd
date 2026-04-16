@@ -1,10 +1,11 @@
 extends CharacterBody2D
 
 const _HIT_EFFECT := preload("res://scenes/effects/HitEffect.tscn")
+const _STAGE_SCALING := preload("res://scripts/systems/EnemyStageScaling.gd")
 
 # ── Stats ──────────────────────────────────────────────────
-@export var max_hp: int = 70
-@export var attack_damage: int = 14
+@export var max_hp: int = 80
+@export var attack_damage: int = 16
 @export var move_speed: float = 85.0
 @export var chase_speed: float = 150.0
 @export var gravity: float = 980.0
@@ -12,7 +13,9 @@ const _HIT_EFFECT := preload("res://scenes/effects/HitEffect.tscn")
 @export var detect_range: float = 240.0   # aggro radius
 @export var attack_range: float = 65.0    # melee reach
 @export var attack_cooldown: float = 0.95
-@export var exp_reward: int = 28
+@export var exp_reward: int = 30
+@export var gold_min: int = 1
+@export var gold_max: int = 2
 
 var hp: int = max_hp
 var _spawn_x: float = 0.0
@@ -38,6 +41,7 @@ func _set_frame(anim_name: String) -> void:
 		sprite.frame = _ANIM_FRAMES[anim_name]
 
 func _ready() -> void:
+	_apply_stage_scaling()
 	add_to_group("enemy")
 	_spawn_x = global_position.x
 	attack_area.monitoring = false
@@ -48,6 +52,16 @@ func _ready() -> void:
 	attack_area.set_collision_mask_value(2, true)
 	detect_area.set_collision_mask_value(1, false)
 	detect_area.set_collision_mask_value(2, true)
+
+func _apply_stage_scaling() -> void:
+	var multiplier: int = _STAGE_SCALING.resolve_multiplier(self)
+	if multiplier > 1:
+		max_hp *= multiplier
+		attack_damage *= multiplier
+		exp_reward *= multiplier
+		gold_min *= multiplier
+		gold_max *= multiplier
+	hp = max_hp
 
 func _physics_process(delta: float) -> void:
 	if _is_dead:
@@ -139,7 +153,7 @@ func _do_attack() -> void:
 		var x_dist := absf(_player.global_position.x - global_position.x)
 		var y_dist := absf(_player.global_position.y - global_position.y)
 		if x_dist <= attack_range * 0.7 and y_dist <= 50.0:
-			_player.take_damage(attack_damage, global_position)
+			_player.take_damage(attack_damage, global_position, "雪人近战")
 
 	var t: SceneTreeTimer = get_tree().create_timer(0.4)
 	t.timeout.connect(func():
@@ -156,7 +170,7 @@ func _check_contact_damage() -> void:
 		var col := get_slide_collision(i)
 		var body := col.get_collider()
 		if body != null and body.is_in_group("player"):
-			body.take_damage(attack_damage, global_position)
+			body.take_damage(attack_damage, global_position, "雪人碰撞")
 			_contact_timer = 0.8
 			break
 
@@ -185,7 +199,8 @@ func _die() -> void:
 	state = State.DEAD
 	_set_frame("dead")
 	GameManager.gain_exp(exp_reward)
-	GameManager.add_gold(randi_range(5, 15))
+	var gold_amount: int = randi_range(gold_min, gold_max)
+	GameManager.drop_gold(gold_amount, get_parent(), global_position)
 	GameManager.on_enemy_killed()
 	# Fade out then free
 	var tween := create_tween()
@@ -207,4 +222,4 @@ func _on_detect_area_body_exited(body: Node) -> void:
 # ── Attack hit callback ────────────────────────────────────
 func _on_attack_area_body_entered(body: Node) -> void:
 	if body.has_method("take_damage"):
-		body.take_damage(attack_damage, global_position)
+		body.take_damage(attack_damage, global_position, "雪人攻击区域")

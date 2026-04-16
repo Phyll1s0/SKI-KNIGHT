@@ -22,6 +22,7 @@ config/icon="res://icon.svg"
 
 [autoload]
 
+KeybindManager="*res://autoload/KeybindManager.gd"
 GameManager="*res://autoload/GameManager.gd"
 EquipmentManager="*res://autoload/EquipmentManager.gd"
 SceneManager="*res://autoload/SceneManager.gd"
@@ -33,6 +34,8 @@ SoundManager="*res://scenes/systems/SoundManager.tscn"
 
 window/size/viewport_width=1280
 window/size/viewport_height=720
+window/stretch/mode="canvas_items"
+window/stretch/aspect="keep"
 
 [input]
 
