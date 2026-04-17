@@ -87,6 +87,11 @@ position = Vector2(200, 656)
 script = ExtResource("8")
 point_name = "DefaultSpawn"
 
+[node name="FromCabin" type="Marker2D" parent="."]
+position = Vector2(140, 656)
+script = ExtResource("8")
+point_name = "FromCabin"
+
 ; ── FromGlacier：从冰川迷宫返回时的出生点（Portal 左侧 80px）──────────
 [node name="FromGlacier" type="Marker2D" parent="."]
 position = Vector2(2940, 656)

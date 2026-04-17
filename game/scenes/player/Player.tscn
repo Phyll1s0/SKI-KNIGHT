@@ -37,6 +37,7 @@ shape = SubResource("RectangleShape2D_attack")
 zoom = Vector2(1.5, 1.5)
 position_smoothing_enabled = true
 position_smoothing_speed = 8.0
+offset = Vector2(0, -16)
 limit_left = 0
 limit_top = -200
 limit_right = 3100

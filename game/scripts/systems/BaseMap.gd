@@ -5,7 +5,7 @@ extends Node2D
 const _EQUIPMENT_PICKUP_SCENE := preload("res://scenes/systems/EquipmentPickup.tscn")
 const _TITLE_LAYER := 90
 const _TITLE_FADE_TIME := 0.25
-const _TITLE_HOLD_TIME := 2.0
+const _TITLE_TOTAL_TIME := 2.5
 
 @export var cold_zone: bool = false
 @export var cold_damage_per_sec: int = 5
@@ -14,6 +14,7 @@ const _TITLE_HOLD_TIME := 2.0
 @export var camera_limit_right: int = -1
 @export var enemy_stage_multiplier: int = 1
 @export var area_title: String = ""
+@export var area_title_duration: float = -1.0
 @export var drop_equipment_on_death: bool = false
 
 var _player: CharacterBody2D = null
@@ -195,6 +196,8 @@ func _show_area_title() -> void:
 	var title_text: String = area_title.strip_edges()
 	if title_text.is_empty():
 		return
+	var total_duration: float = area_title_duration if area_title_duration > 0.0 else _TITLE_TOTAL_TIME
+	var hold_duration: float = max(total_duration - (_TITLE_FADE_TIME * 2.0), 0.0)
 	var layer: CanvasLayer = CanvasLayer.new()
 	layer.layer = _TITLE_LAYER
 	add_child(layer)
@@ -215,6 +218,6 @@ func _show_area_title() -> void:
 
 	var tween: Tween = create_tween()
 	tween.tween_property(label, "modulate:a", 1.0, _TITLE_FADE_TIME)
-	tween.tween_interval(_TITLE_HOLD_TIME)
+	tween.tween_interval(hold_duration)
 	tween.tween_property(label, "modulate:a", 0.0, _TITLE_FADE_TIME)
 	tween.tween_callback(layer.queue_free)
