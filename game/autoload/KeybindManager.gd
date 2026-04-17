@@ -194,7 +194,24 @@ func apply_bindings() -> void:
 		_add_binding_event(action_name, _get_primary_binding(action_name))
 		for fallback_binding in entry.get("fallback_bindings", []):
 			_add_binding_event(action_name, _normalize_binding(fallback_binding))
+	# 始终为移动动作添加左摇杆轴绑定（不可自定义，确保模拟输入正常）
+	_add_joy_axis_event("move_left",  JOY_AXIS_LEFT_X, -1.0)
+	_add_joy_axis_event("move_right", JOY_AXIS_LEFT_X,  1.0)
 	bindings_changed.emit()
+
+func _add_joy_axis_event(action_name: String, axis: int, axis_value: float) -> void:
+	if not InputMap.has_action(action_name):
+		return
+	for existing in InputMap.action_get_events(action_name):
+		if existing is InputEventJoypadMotion:
+			var joy_motion := existing as InputEventJoypadMotion
+			if joy_motion.axis == axis and sign(joy_motion.axis_value) == sign(axis_value):
+				return
+	var motion_event := InputEventJoypadMotion.new()
+	motion_event.device = -1
+	motion_event.axis = axis
+	motion_event.axis_value = axis_value
+	InputMap.action_add_event(action_name, motion_event)
 
 func _get_primary_binding(action_name: String) -> Dictionary:
 	if custom_bindings.has(action_name):

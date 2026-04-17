@@ -77,7 +77,7 @@ func _try_collect(body: Node) -> void:
 	if is_dead:
 		return
 	_collected = true
-	monitoring = false
+	set_deferred("monitoring", false)
 	GameManager.add_gold(max(amount, 1))
 	var tween: Tween = create_tween()
 	tween.tween_property(self, "scale", Vector2(1.18, 1.18), 0.08)

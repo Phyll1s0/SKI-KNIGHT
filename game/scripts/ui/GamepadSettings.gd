@@ -9,11 +9,15 @@ const DEADZONE_MAX: float = 0.5
 const DEFAULT_DEADZONE: float = 0.15
 
 var _current_deadzone: float = DEFAULT_DEADZONE
+var _did_pause_tree: bool = false
 
 func _ready() -> void:
 	visible = false
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	mouse_filter = Control.MOUSE_FILTER_STOP
+	# 确保按钮在树暂停时也能接收点击事件
+	$Overlay/Panel/VBox/Footer/CloseBtn.process_mode = Node.PROCESS_MODE_ALWAYS
+	$Overlay/Panel/VBox/Footer/ResetBtn.process_mode = Node.PROCESS_MODE_ALWAYS
 	
 	# 从 project.godot 读取当前 deadzone
 	var move_left_deadzone = InputMap.action_get_deadzone("move_left")
@@ -35,11 +39,16 @@ func _ready() -> void:
 
 func open_panel() -> void:
 	visible = true
-	get_tree().paused = true
+	move_to_front()
+	if not get_tree().paused:
+		get_tree().paused = true
+		_did_pause_tree = true
 
 func close_panel() -> void:
 	visible = false
-	get_tree().paused = false
+	if _did_pause_tree:
+		get_tree().paused = false
+		_did_pause_tree = false
 
 func _on_sensitivity_changed(value: float) -> void:
 	_current_deadzone = value

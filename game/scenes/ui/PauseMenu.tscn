@@ -2,6 +2,7 @@
 
 [ext_resource type="Script" path="res://scripts/ui/PauseMenu.gd" id="1"]
 [ext_resource type="PackedScene" path="res://scenes/ui/KeybindSettings.tscn" id="2"]
+[ext_resource type="PackedScene" path="res://scenes/ui/GamepadSettings.tscn" id="3"]
 
 [node name="PauseMenu" type="Control"]
 script = ExtResource("1")
@@ -41,6 +42,11 @@ text = "按键设置"
 custom_minimum_size = Vector2(320, 48)
 theme_override_font_sizes/font_size = 18
 
+[node name="GamepadBtn" type="Button" parent="VBox"]
+text = "手柄设置"
+custom_minimum_size = Vector2(320, 48)
+theme_override_font_sizes/font_size = 18
+
 [node name="MenuBtn" type="Button" parent="VBox"]
 text = "保存并返回主菜单"
 custom_minimum_size = Vector2(320, 48)
@@ -48,6 +54,9 @@ theme_override_font_sizes/font_size = 18
 
 [node name="KeybindSettings" parent="." instance=ExtResource("2")]
 
+[node name="GamepadSettings" parent="." instance=ExtResource("3")]
+
 [connection signal="pressed" from="VBox/ContinueBtn" to="." method="_on_continue_pressed"]
 [connection signal="pressed" from="VBox/SettingsBtn" to="." method="_on_settings_pressed"]
+[connection signal="pressed" from="VBox/GamepadBtn" to="." method="_on_gamepad_pressed"]
 [connection signal="pressed" from="VBox/MenuBtn" to="." method="_on_menu_pressed"]

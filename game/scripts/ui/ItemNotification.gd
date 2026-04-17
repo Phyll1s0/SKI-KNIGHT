@@ -7,16 +7,21 @@ extends CanvasLayer
 @onready var description_label: Label = $Panel/VBox/Description
 
 var _is_showing: bool = false
+var _done_callback: Callable = Callable()
 
 func _ready() -> void:
 	layer = 99
 	panel.modulate.a = 0.0
 	hide()
 
-func show_notification(item_name: String, description: String) -> void:
+func is_showing() -> bool:
+	return _is_showing
+
+func show_notification(item_name: String, description: String, done_callback: Callable = Callable()) -> void:
 	if _is_showing:
 		return
 	_is_showing = true
+	_done_callback = done_callback
 	item_name_label.text = item_name
 	description_label.text = description
 	show()
@@ -32,4 +37,6 @@ func show_notification(item_name: String, description: String) -> void:
 	tween.tween_callback(func():
 		hide()
 		_is_showing = false
+		if _done_callback.is_valid():
+			_done_callback.call()
 	)

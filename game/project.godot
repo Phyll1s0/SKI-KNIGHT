@@ -18,7 +18,7 @@ config/name="Skiknight"
 config/description="A Metroidvania game with skiing mechanics"
 run/main_scene="res://scenes/ui/MainMenu.tscn"
 config/features=PackedStringArray("4.6", "Forward Plus")
-config/icon="res://icon.svg"
+config/icon="res://image.png"
 
 [autoload]
 

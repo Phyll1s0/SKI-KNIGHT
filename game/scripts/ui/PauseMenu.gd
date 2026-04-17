@@ -1,6 +1,7 @@
 extends Control
 
 @onready var keybind_settings: Control = $KeybindSettings
+@onready var gamepad_settings: Control = $GamepadSettings
 
 func _ready() -> void:
 	add_to_group("pause_menu")
@@ -24,6 +25,8 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 	if keybind_settings != null and keybind_settings.visible:
 		return
+	if gamepad_settings != null and gamepad_settings.visible:
+		return
 	if event.is_action_pressed("ui_cancel"):
 		get_viewport().set_input_as_handled()
 		_on_continue_pressed()
@@ -34,6 +37,10 @@ func _on_continue_pressed() -> void:
 func _on_settings_pressed() -> void:
 	if keybind_settings != null:
 		keybind_settings.call("open_panel")
+
+func _on_gamepad_pressed() -> void:
+	if gamepad_settings != null:
+		gamepad_settings.call("open_panel")
 
 func _on_menu_pressed() -> void:
 	SaveSystem.save()

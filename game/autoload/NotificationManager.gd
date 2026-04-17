@@ -5,14 +5,29 @@ extends Node
 const _NOTIFICATION_SCENE := preload("res://scenes/ui/ItemNotification.tscn")
 
 var _notification_instance: CanvasLayer = null
+var _queue: Array = []  # 排队中的通知 [{name, desc}, ...]
 
 func _ready() -> void:
 	_notification_instance = _NOTIFICATION_SCENE.instantiate()
 	add_child(_notification_instance)
 
 func show_item_acquired(item_name: String, description: String) -> void:
+	if _notification_instance == null:
+		return
+	if _notification_instance.has_method("is_showing") and _notification_instance.call("is_showing"):
+		_queue.append({"name": item_name, "desc": description})
+		return
+	_show_now(item_name, description)
+
+func _show_now(item_name: String, description: String) -> void:
 	if _notification_instance != null and _notification_instance.has_method("show_notification"):
-		_notification_instance.show_notification(item_name, description)
+		_notification_instance.show_notification(item_name, description, _on_notification_done)
+
+func _on_notification_done() -> void:
+	if _queue.is_empty():
+		return
+	var next: Dictionary = _queue.pop_front()
+	_show_now(String(next["name"]), String(next["desc"]))
 
 # 装备获得提示文本
 func get_equipment_description(slot: int, level: int) -> Dictionary:

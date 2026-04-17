@@ -445,6 +445,7 @@ position = Vector2(640, 360)
 
 ; ── 调试标签 ────────────────────────────────────
 [node name="DebugLabel" type="Label" parent="."]
+visible = false
 position = Vector2(10, 610)
 size = Vector2(1080, 78)
 text = "坐标调试: waiting..."
