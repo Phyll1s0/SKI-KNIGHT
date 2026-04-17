@@ -69,7 +69,7 @@ func _on_start_pressed() -> void:
 	SkillManager.unlocked_skills[SkillManager.Skill.PARALLEL_SKIING] = false
 	SkillManager.unlocked_skills[SkillManager.Skill.CARVING]         = false
 	SkillManager.unlocked_skills[SkillManager.Skill.BACK_FLIP]       = false
-	SceneManager.go_to("res://scenes/maps/TestMap.tscn")
+	SceneManager.go_to("res://scenes/ui/NewGameIntro.tscn")
 
 func _on_settings_pressed() -> void:
 	main_buttons.visible = false
