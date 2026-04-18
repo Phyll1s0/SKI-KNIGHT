@@ -33,6 +33,7 @@ func _ready() -> void:
 	
 	_update_sensitivity_label()
 	_build_mapping_list()
+	KeybindManager.bindings_changed.connect(_build_mapping_list)
 	
 	$Overlay/Panel/VBox/Footer/CloseBtn.pressed.connect(close_panel)
 	$Overlay/Panel/VBox/Footer/ResetBtn.pressed.connect(_reset_to_default)
@@ -78,10 +79,12 @@ func _build_mapping_list() -> void:
 	# 手柄按键映射说明
 	var mappings := [
 		{"action": "移动", "key": "左摇杆 左/右 或 方向键"},
-		{"action": "跳跃", "key": "A 键 (按钮0)"},
-		{"action": "刹车", "key": "B 键 (按钮1)"},
-		{"action": "攻击", "key": "X 键 (按钮2)"},
-		{"action": "技能", "key": "Y 键 (按钮3)"},
+		{"action": "跳跃", "key": KeybindManager.get_display_text_by_kind("jump", "joy_button")},
+		{"action": "刹车", "key": KeybindManager.get_display_text_by_kind("brake", "joy_button")},
+		{"action": "攻击", "key": KeybindManager.get_display_text_by_kind("attack", "joy_button")},
+		{"action": "技能", "key": KeybindManager.get_display_text_by_kind("skill", "joy_button")},
+		{"action": "交互", "key": KeybindManager.get_display_text_by_kind("interact", "joy_button")},
+		{"action": "暂停/取消", "key": KeybindManager.get_display_text_by_kind("ui_cancel", "joy_button")},
 	]
 	
 	for mapping in mappings:
@@ -90,13 +93,13 @@ func _build_mapping_list() -> void:
 		
 		var action_label := Label.new()
 		action_label.text = mapping["action"]
-		action_label.custom_minimum_size = Vector2(100.0, 28.0)
+		action_label.custom_minimum_size = Vector2(130.0, 28.0)
 		action_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		action_label.add_theme_color_override("font_color", Color(0.7, 0.9, 1.0))
 		
 		var key_label := Label.new()
 		key_label.text = mapping["key"]
-		key_label.custom_minimum_size = Vector2(280.0, 28.0)
+		key_label.custom_minimum_size = Vector2(250.0, 28.0)
 		key_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		key_label.add_theme_color_override("font_color", Color(0.85, 0.95, 1.0, 0.9))
 		

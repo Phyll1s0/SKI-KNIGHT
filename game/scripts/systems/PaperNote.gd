@@ -38,12 +38,12 @@ func _process(_delta: float) -> void:
 
 func _refresh_input_hints() -> void:
 	prompt_label.text = "[%s] %s" % [
-		KeybindManager.get_display_text("interact"),
+		KeybindManager.get_combined_display_text("interact"),
 		prompt_action_text,
 	]
 	close_tip.text = "[ %s ] 收起   [ %s ] 关闭" % [
-		KeybindManager.get_display_text("interact"),
-		KeybindManager.get_display_text("ui_cancel"),
+		KeybindManager.get_combined_display_text("interact"),
+		KeybindManager.get_combined_display_text("ui_cancel"),
 	]
 
 func _apply_note_font_overrides() -> void:

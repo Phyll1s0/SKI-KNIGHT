@@ -52,10 +52,10 @@ func _toggle_shop() -> void:
 		_refresh_ui()
 
 func _refresh_input_hints() -> void:
-	prompt_label.text = "[%s] 购物" % KeybindManager.get_display_text("interact")
+	prompt_label.text = "[%s] 购物" % KeybindManager.get_combined_display_text("interact")
 	close_tip.text = "[ %s ] 开/关   [ %s ] 关闭" % [
-		KeybindManager.get_display_text("interact"),
-		KeybindManager.get_display_text("ui_cancel")
+		KeybindManager.get_combined_display_text("interact"),
+		KeybindManager.get_combined_display_text("ui_cancel")
 	]
 
 # _dummy 用于兼容 gold_changed(amount: int) 信号签名

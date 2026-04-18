@@ -13,6 +13,7 @@
 [ext_resource type="PackedScene" path="res://scenes/enemies/IceLynx.tscn" id="11"]
 [ext_resource type="PackedScene" path="res://scenes/systems/Shop.tscn" id="12"]
 [ext_resource type="PackedScene" path="res://scenes/systems/CableCar.tscn" id="13"]
+[ext_resource type="PackedScene" path="res://scenes/systems/StoryStele.tscn" id="14"]
 
 ; ======================================================================
 ; 冰川迷宫 3400px x 1800px
@@ -175,6 +176,10 @@ point_name = "FromBlizzard"
 
 [node name="Player" parent="." instance=ExtResource("1")]
 position = Vector2(100, 840)
+
+[node name="StorySteleEntrance" parent="." instance=ExtResource("14")]
+position = Vector2(360, 870)
+message_text = "若霜还肯让你辨认此字，白夜便尚未张眼。"
 
 [node name="WallLeft" type="StaticBody2D" parent="."]
 position = Vector2(20, 500)

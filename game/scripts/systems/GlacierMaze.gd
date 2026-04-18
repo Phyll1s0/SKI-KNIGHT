@@ -8,6 +8,7 @@ const ICE_ZONES: Array = [
 	[2700.0, 3200.0,  6.0],   # 冰区C：极滑深冰，最后考验
 ]
 const DEFAULT_FRICTION: float = 120.0
+const _BOSS1_DEFEAT_QUOTE := "你踏过去的不是关隘，是一层层尚未醒透的锁。"
 
 @onready var _boss1: Node2D = $IceLynxBoss
 @onready var _portal_to_blizzard: Area2D = $PortalToBlizzard
@@ -57,6 +58,7 @@ func _on_boss1_defeated() -> void:
 	if is_instance_valid(_boss_room_trigger):
 		_boss_room_trigger.monitoring = false
 	_set_blizzard_portal_unlocked(true)
+	await SceneManager.show_story_quote(_BOSS1_DEFEAT_QUOTE)
 
 func _should_lock_boss_room() -> bool:
 	return is_instance_valid(_player) and _player.global_position.x >= _BOSS_ROOM_ENTRY_X

@@ -1,6 +1,9 @@
 extends "res://scripts/systems/BaseMap.gd"
 # 暴风雪高地 — cold_zone，持续侧风，入场需要高级雪服 + 平行式滑雪技能
 
+const _ACT3_ENTRY_FLAG := "blizzard_highlands_entry_quote"
+const _ACT3_ENTRY_QUOTE := "前面的区域以后再来探索吧"
+
 # 强风参数
 @export var wind_force: float = 180.0      # 水平风力（像素/秒²）
 @export var wind_direction: float = 1.0    # 1.0=向右, -1.0=向左
@@ -14,6 +17,7 @@ func _ready() -> void:
 	super._ready()
 	# 随机初始风向
 	wind_direction = 1.0 if randf() > 0.5 else -1.0
+	_maybe_show_act3_entry_quote()
 
 func _process(delta: float) -> void:
 	super._process(delta)   # 调用 BaseMap 寒冷扣血
@@ -43,3 +47,19 @@ func _apply_wind(delta: float) -> void:
 	var input_dir: float = Input.get_axis("move_left", "move_right")
 	var resistance: float = 0.4 if input_dir * wind_direction < 0 else 1.0
 	_player.velocity.x += wind_force * wind_direction * resistance * zone_mult * delta
+
+func _maybe_show_act3_entry_quote() -> void:
+	if SceneManager.get_spawn_point_name() != "FromGlacier":
+		return
+	if GameManager.has_story_flag(_ACT3_ENTRY_FLAG):
+		return
+	GameManager.set_story_flag(_ACT3_ENTRY_FLAG)
+	if SceneManager.is_transitioning():
+		SceneManager.scene_transition_finished.connect(_show_act3_entry_quote, CONNECT_ONE_SHOT)
+		return
+	_show_act3_entry_quote()
+
+func _show_act3_entry_quote() -> void:
+	if not is_inside_tree():
+		return
+	await SceneManager.show_story_quote(_ACT3_ENTRY_QUOTE)

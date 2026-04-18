@@ -1,0 +1,57 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/systems/StoryStele.gd" id="1"]
+
+[sub_resource type="RectangleShape2D" id="Shape_trigger"]
+size = Vector2(100, 132)
+
+[node name="StoryStele" type="Area2D"]
+script = ExtResource("1")
+collision_layer = 0
+collision_mask = 2
+z_index = 10
+
+[node name="Shadow" type="Polygon2D" parent="."]
+position = Vector2(0, 10)
+polygon = PackedVector2Array(-46, -4, 46, -4, 56, 8, -56, 8)
+color = Color(0.08, 0.06, 0.05, 0.26)
+
+[node name="StoneBody" type="Polygon2D" parent="."]
+polygon = PackedVector2Array(-30, -116, 30, -116, 36, -14, -36, -14)
+color = Color(0.67, 0.71, 0.79, 1)
+
+[node name="StoneCap" type="Polygon2D" parent="."]
+polygon = PackedVector2Array(-36, -128, 36, -128, 42, -112, -42, -112)
+color = Color(0.76, 0.80, 0.88, 1)
+
+[node name="StoneBase" type="Polygon2D" parent="."]
+polygon = PackedVector2Array(-42, -16, 42, -16, 52, 10, -52, 10)
+color = Color(0.55, 0.59, 0.67, 1)
+
+[node name="RuneLineA" type="Line2D" parent="."]
+width = 2.0
+default_color = Color(0.90, 0.96, 1.0, 0.92)
+points = PackedVector2Array(-12, -88, 10, -96, 18, -76, -8, -68)
+
+[node name="RuneLineB" type="Line2D" parent="."]
+width = 2.0
+default_color = Color(0.88, 0.94, 1.0, 0.86)
+points = PackedVector2Array(-16, -50, 4, -58, 12, -36, -10, -28)
+
+[node name="PromptLabel" type="Label" parent="."]
+position = Vector2(-130, -162)
+size = Vector2(260, 32)
+text = "[F] 查看碑文"
+horizontal_alignment = 1
+theme_override_font_sizes/font_size = 14
+theme_override_colors/font_color = Color(0.94, 0.95, 0.84, 1)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 1)
+theme_override_constants/shadow_offset_x = 1
+theme_override_constants/shadow_offset_y = 1
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+position = Vector2(0, -56)
+shape = SubResource("Shape_trigger")
+
+[connection signal="body_entered" from="." to="." method="_on_body_entered"]
+[connection signal="body_exited" from="." to="." method="_on_body_exited"]

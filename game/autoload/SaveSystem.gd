@@ -68,6 +68,7 @@ func save() -> void:
 		"gold": GameManager.gold,
 		"has_suit_fragment": GameManager.has_suit_fragment,
 		"has_goggles_part":  GameManager.has_goggles_part,
+		"story_flags": GameManager.story_flags,
 		"equipment": {
 			"helmet":    EquipmentManager.equipment_level[EquipmentManager.Slot.HELMET],
 			"goggles":   EquipmentManager.equipment_level[EquipmentManager.Slot.GOGGLES],
@@ -122,6 +123,7 @@ func load_save() -> bool:
 	GameManager.gold               = data.get("gold", 0)
 	GameManager.has_suit_fragment  = data.get("has_suit_fragment", false)
 	GameManager.has_goggles_part   = data.get("has_goggles_part",  false)
+	GameManager.story_flags = data.get("story_flags", {}).duplicate(true) if data.get("story_flags", {}) is Dictionary else {}
 	GameManager.clear_death_retry_state()
 	GameManager.pending_equipment_drops.clear()
 	for entry in data.get("pending_equipment_drops", []):

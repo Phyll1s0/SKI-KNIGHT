@@ -9,6 +9,7 @@
 [ext_resource type="PackedScene" path="res://scenes/systems/Portal.tscn" id="7"]
 [ext_resource type="Script" path="res://scripts/systems/SpawnPoint.gd" id="8"]
 [ext_resource type="PackedScene" path="res://scenes/systems/SavePoint.tscn" id="9"]
+[ext_resource type="PackedScene" path="res://scenes/systems/StoryStele.tscn" id="10"]
 
 ; ── Collision shapes ────────────────────────────────────────────────────
 [sub_resource type="RectangleShape2D" id="Shape_ground_left"]
@@ -176,6 +177,10 @@ label_text = "雪镜 Lv.1"
 ; SavePoint 1 — tutorial
 [node name="SavePoint1" parent="." instance=ExtResource("9")]
 position = Vector2(400, 660)
+
+[node name="StorySteleIntro" parent="." instance=ExtResource("10")]
+position = Vector2(560, 670)
+message_text = "沿着风折断的方向往上。山先给你的那张脸，通常不是真的。"
 
 ; ════════════════════════════════════════════════════════════════════════
 ;  PIT 1 (x=900–1080)

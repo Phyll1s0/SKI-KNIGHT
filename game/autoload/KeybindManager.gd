@@ -158,6 +158,24 @@ func get_display_text(action_name: String) -> String:
 	var binding: Dictionary = _get_primary_binding(action_name)
 	return _binding_to_text(binding)
 
+func get_combined_display_text(action_name: String) -> String:
+	var texts: Array[String] = []
+	for binding in _get_all_bindings(action_name):
+		var binding_text: String = _binding_to_text(binding)
+		if binding_text == "未设置":
+			continue
+		if texts.has(binding_text):
+			continue
+		texts.append(binding_text)
+	return " / ".join(texts) if not texts.is_empty() else "未设置"
+
+func get_display_text_by_kind(action_name: String, binding_kind: String) -> String:
+	for binding in _get_all_bindings(action_name):
+		if String(binding.get("kind", "")) != binding_kind:
+			continue
+		return _binding_to_text(binding)
+	return "未设置"
+
 func set_primary_event(action_name: String, event: InputEvent) -> void:
 	if not _action_meta.has(action_name):
 		return
@@ -218,6 +236,21 @@ func _get_primary_binding(action_name: String) -> Dictionary:
 		return _normalize_binding(custom_bindings[action_name])
 	var entry: Dictionary = _action_meta.get(action_name, {})
 	return _normalize_binding(entry.get("default_binding", {}))
+
+func _get_all_bindings(action_name: String) -> Array[Dictionary]:
+	var bindings: Array[Dictionary] = []
+	var primary_binding: Dictionary = _get_primary_binding(action_name)
+	if not primary_binding.is_empty():
+		bindings.append(primary_binding)
+	var entry: Dictionary = _action_meta.get(action_name, {})
+	for fallback_binding in entry.get("fallback_bindings", []):
+		var normalized_binding: Dictionary = _normalize_binding(fallback_binding)
+		if normalized_binding.is_empty():
+			continue
+		if bindings.has(normalized_binding):
+			continue
+		bindings.append(normalized_binding)
+	return bindings
 
 func _add_binding_event(action_name: String, binding: Dictionary) -> void:
 	if binding.is_empty():

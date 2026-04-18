@@ -36,6 +36,7 @@ corner_radius_bottom_left = 12
 script = ExtResource("1")
 area_title = "家"
 area_title_duration = 2.0
+camera_limit_right = 1280
 
 [node name="Background" type="Node2D" parent="."]
 position = Vector2(0, 110)

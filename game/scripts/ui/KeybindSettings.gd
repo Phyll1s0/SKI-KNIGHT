@@ -17,6 +17,7 @@ func _ready() -> void:
 
 func open_panel() -> void:
 	visible = true
+	move_to_front()
 	_cancel_listening()
 	_refresh_button_texts()
 

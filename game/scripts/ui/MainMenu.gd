@@ -1,19 +1,29 @@
 extends Control
 # 主菜单
 
+const INPUT_GUARD_DURATION := 0.2
+
 @onready var title_label: Label = $Title
 @onready var subtitle: Label = $Subtitle
 @onready var main_buttons: VBoxContainer = $MainButtons
 @onready var settings_menu: VBoxContainer = $SettingsMenu
 @onready var continue_btn: Button = $MainButtons/ContinueBtn
+@onready var start_btn: Button = $MainButtons/StartBtn
+@onready var settings_btn: Button = $MainButtons/SettingsBtn
+@onready var keybind_btn: Button = $SettingsMenu/KeybindBtn
+@onready var gamepad_btn: Button = $SettingsMenu/GamepadBtn
+@onready var quit_btn: Button = $SettingsMenu/QuitBtn
+@onready var back_btn: Button = $SettingsMenu/BackBtn
 @onready var keybind_settings: Control = $KeybindSettings
 @onready var gamepad_settings: Control = $GamepadSettings
 
 func _ready() -> void:
 	get_tree().paused = false
+	_set_menu_input_enabled(false)
 	_refresh_save_ui()
 	_start_title_animation()
 	_animate_entrance()
+	_release_input_guard.call_deferred()
 
 func _refresh_save_ui() -> void:
 	var has := SaveSystem.has_save()
@@ -55,6 +65,7 @@ func _on_start_pressed() -> void:
 	GameManager.has_goggles_part       = false
 	GameManager.has_ice_blade          = false
 	GameManager.respawn_position       = Vector2.ZERO
+	GameManager.story_flags.clear()
 	EquipmentManager.equipment_level[EquipmentManager.Slot.HELMET]    = 0
 	EquipmentManager.equipment_level[EquipmentManager.Slot.GOGGLES]   = 0
 	EquipmentManager.equipment_level[EquipmentManager.Slot.SNOWBOARD] = 0
@@ -93,3 +104,16 @@ func _on_back_pressed() -> void:
 	main_buttons.modulate.a = 0.0
 	main_buttons.visible = true
 	create_tween().tween_property(main_buttons, "modulate:a", 1.0, 0.2).set_trans(Tween.TRANS_CUBIC)
+
+func _release_input_guard() -> void:
+	await get_tree().create_timer(INPUT_GUARD_DURATION).timeout
+	_set_menu_input_enabled(true)
+
+func _set_menu_input_enabled(enabled: bool) -> void:
+	continue_btn.disabled = not enabled
+	start_btn.disabled = not enabled
+	settings_btn.disabled = not enabled
+	keybind_btn.disabled = not enabled
+	gamepad_btn.disabled = not enabled
+	quit_btn.disabled = not enabled
+	back_btn.disabled = not enabled
