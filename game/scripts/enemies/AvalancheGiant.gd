@@ -4,9 +4,9 @@ const _PLACEHOLDER_VISUALS := preload("res://scripts/systems/BossPlaceholderVisu
 const _BOSS_ATTACK_TELEGRAPH := preload("res://scripts/systems/BossAttackTelegraph.gd")
 
 @export var max_hp: int = 1020
-@export var punch_damage: int = 34
-@export var slam_damage: int = 46
-@export var avalanche_damage: int = 30
+@export var punch_damage: int = 28
+@export var slam_damage: int = 40
+@export var avalanche_damage: int = 24
 @export var move_speed: float = 68.0
 @export var gravity: float = 980.0
 @export var detect_range: float = 620.0
@@ -17,9 +17,9 @@ const _BOSS_ATTACK_TELEGRAPH := preload("res://scripts/systems/BossAttackTelegra
 @export var avalanche_cooldown: float = 4.2
 @export var exp_reward: int = 620
 @export var gold_reward: int = 220
-@export var contact_damage: int = 24
-@export var contact_cooldown: float = 0.85
-@export var sweep_damage: int = 28
+@export var contact_damage: int = 16
+@export var contact_cooldown: float = 1.15
+@export var sweep_damage: int = 24
 @export var sweep_cooldown: float = 4.8
 
 var hp: int = max_hp

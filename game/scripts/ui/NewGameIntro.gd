@@ -31,9 +31,10 @@ func _ready() -> void:
 
 func _apply_text_style() -> void:
 	intro_label.add_theme_font_size_override("font_size", INTRO_FONT_SIZE)
-	if ThemeDB.fallback_font == null:
+	var base_font: Font = SceneManager.get_ui_font()
+	if base_font == null:
 		return
 	var spaced_font := FontVariation.new()
-	spaced_font.base_font = ThemeDB.fallback_font
+	spaced_font.base_font = base_font
 	spaced_font.spacing_glyph = INTRO_GLYPH_SPACING
 	intro_label.add_theme_font_override("font", spaced_font)

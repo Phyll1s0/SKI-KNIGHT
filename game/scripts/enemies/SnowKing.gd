@@ -9,12 +9,12 @@ const _BOSS_ATTACK_TELEGRAPH := preload("res://scripts/systems/BossAttackTelegra
 
 # ── Stats ──────────────────────────────────────────────────
 @export var max_hp: int = 1000
-@export var charge_damage: int = 38
-@export var slam_damage: int = 52
-@export var blizzard_damage: int = 22   # 每颗冰球伤害（PhaseII）
-@export var wind_damage: int = 26
-@export var charge_speed: float = 470.0
-@export var move_speed: float = 126.0
+@export var charge_damage: int = 32
+@export var slam_damage: int = 44
+@export var blizzard_damage: int = 16   # 每颗冰球伤害（PhaseII）
+@export var wind_damage: int = 18
+@export var charge_speed: float = 420.0
+@export var move_speed: float = 108.0
 @export var gravity: float = 980.0
 @export var detect_range: float = 600.0
 @export var charge_range: float = 420.0
@@ -25,10 +25,11 @@ const _BOSS_ATTACK_TELEGRAPH := preload("res://scripts/systems/BossAttackTelegra
 @export var blizzard_cooldown: float = 5.5
 @export var exp_reward: int = 800
 @export var iceball_scene: PackedScene = preload("res://scenes/enemies/IceBall.tscn")
-@export var contact_damage: int = 28
-@export var contact_cooldown: float = 0.9
-@export var cleave_damage: int = 34
+@export var contact_damage: int = 18
+@export var contact_cooldown: float = 1.2
+@export var cleave_damage: int = 28
 @export var cleave_cooldown: float = 4.0
+@export var wind_cooldown: float = 5.2
 
 var hp: int = max_hp
 var _is_dead: bool = false
@@ -38,6 +39,7 @@ var _charge_dir: float = 1.0
 var _charge_timer: float = 2.0
 var _slam_timer: float = 4.0
 var _blizzard_timer: float = 3.0
+var _wind_timer: float = 5.0
 var _state_timer: float = 0.0
 var _contact_timer: float = 0.0
 var _facing: float = 1.0
@@ -111,6 +113,7 @@ func _physics_process(delta: float) -> void:
 	_charge_timer = max(_charge_timer - delta, 0.0)
 	_slam_timer = max(_slam_timer - delta, 0.0)
 	_blizzard_timer = max(_blizzard_timer - delta, 0.0)
+	_wind_timer = max(_wind_timer - delta, 0.0)
 	_cleave_timer = max(_cleave_timer - delta, 0.0)
 	_contact_timer = max(_contact_timer - delta, 0.0)
 	if _telegraph != null:
@@ -119,8 +122,8 @@ func _physics_process(delta: float) -> void:
 	if not is_on_floor():
 		velocity.y += gravity * delta
 
-	# 二阶段触发（600 血）
-	if not _phase2 and hp <= 600:
+	# 二阶段触发（50% 血量）
+	if not _phase2 and hp <= int(round(float(max_hp) * 0.5)):
 		_phase2 = true
 		if not _rage_triggered:
 			_rage_triggered = true
@@ -219,15 +222,19 @@ func _physics_process(delta: float) -> void:
 				wind_area.monitoring = true
 			if _state_timer >= 0.78:
 				wind_area.monitoring = false
+				_wind_timer = wind_cooldown
 				_change_state(State.ROAM)
 
 		State.PHASE2_RAGE:
 			# 进入狂暴动画（站立硬直 1.5s，表示愤怒）
 			velocity.x = 0.0
 			if _state_timer >= 1.5:
-				# 加速所有冷却
+				# 加速所有冷却，并回到可行动状态。
 				charge_cooldown = 3.4
-			slam_cooldown = 2.8
+				slam_cooldown = 3.2
+				blizzard_cooldown = 4.4
+				wind_cooldown = 4.8
+				_change_state(State.ROAM)
 
 		State.HURT:
 			if _state_timer >= 0.35:
@@ -260,7 +267,7 @@ func _do_roam(delta: float) -> void:
 		return
 
 	# Phase 2：随机风暴冲击（每次攻击间随机触发）
-	if _phase2 and _slam_timer <= 1.0 and dist < 180.0:
+	if _phase2 and _wind_timer <= 0.0 and dist < 190.0:
 		_change_state(State.WIND_BURST)
 		return
 
@@ -381,5 +388,6 @@ func _on_wind_area_body_entered(body: Node) -> void:
 	# 强力击退
 	if body is CharacterBody2D:
 		var knock_dir: float = sign(body.global_position.x - global_position.x)
-		body.velocity.x += knock_dir * 600.0
-		body.velocity.y = -250.0
+		var equipment_mult: float = EquipmentManager.knockback_received_multiplier()
+		body.velocity.x += knock_dir * 280.0 * equipment_mult
+		body.velocity.y = minf(body.velocity.y, -120.0)

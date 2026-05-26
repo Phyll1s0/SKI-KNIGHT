@@ -13,6 +13,9 @@
 [ext_resource type="PackedScene" path="res://scenes/systems/EquipmentPickup.tscn" id="11"]
 [ext_resource type="PackedScene" path="res://scenes/enemies/ArmoredIceBear.tscn" id="12"]
 [ext_resource type="PackedScene" path="res://scenes/enemies/AvalancheGiant.tscn" id="13"]
+[ext_resource type="PackedScene" path="res://scenes/systems/StoryStele.tscn" id="14"]
+[ext_resource type="PackedScene" path="res://scenes/systems/BreakableIcePlatform.tscn" id="15"]
+[ext_resource type="PackedScene" path="res://scenes/systems/PaperNote.tscn" id="16"]
 
 ; ====================================================================
 ; 地下冰窟 4200px x 1400px
@@ -96,7 +99,7 @@ points = PackedVector2Array(0, 0, 160, 0, 160, -440)
 
 [node name="IceCave" type="Node2D"]
 script = ExtResource("2")
-enemy_stage_multiplier = 3
+enemy_stage_multiplier = 2
 area_title = "地下冰窟"
 
 [node name="HUD" parent="." instance=ExtResource("3")]
@@ -113,6 +116,33 @@ point_name = "FromPeak"
 
 [node name="Player" parent="." instance=ExtResource("1")]
 position = Vector2(100, 740)
+
+[node name="SealChainVista" type="Node2D" parent="."]
+z_index = -4
+
+[node name="ChainA" type="Line2D" parent="SealChainVista"]
+width = 9.0
+default_color = Color(0.30, 0.42, 0.58, 0.45)
+points = PackedVector2Array(1180, 210, 1620, 420, 2180, 350, 2860, 620, 3440, 500)
+
+[node name="ChainB" type="Line2D" parent="SealChainVista"]
+width = 7.0
+default_color = Color(0.20, 0.32, 0.48, 0.42)
+points = PackedVector2Array(900, 1220, 1420, 980, 2000, 1080, 2720, 880, 3900, 980)
+
+[node name="CoreGlow" type="Polygon2D" parent="SealChainVista"]
+position = Vector2(3860, 720)
+polygon = PackedVector2Array(-72, -90, 64, -72, 92, 54, -38, 104, -104, 18)
+color = Color(0.55, 0.86, 1.0, 0.16)
+
+[node name="StorySteleCaveEntry" parent="." instance=ExtResource("14")]
+position = Vector2(520, 782)
+message_text = "若你以为山顶才是尽头，就还没有听见石下的白夜。"
+
+[node name="PaperNoteLastRecord" parent="." instance=ExtResource("16")]
+position = Vector2(1840, 482)
+note_text = "我在高处见过那个人。\n不是山把他留下，是他自己没有退。若你终究走到尽头，先裂其冠，再问其名。"
+signature_text = "—— 师傅"
 
 [node name="WallLeft" type="StaticBody2D" parent="."]
 position = Vector2(20, 700)
@@ -284,6 +314,25 @@ position = Vector2(3100, 1000)
 [node name="Col" type="CollisionShape2D" parent="DeepPlatF"]
 shape = SubResource("Sh_plat_sm")
 
+[node name="CrackedDeepBridgeA" parent="." instance=ExtResource("15")]
+position = Vector2(1220, 1000)
+break_delay = 0.8
+respawn_delay = 2.6
+
+[node name="CrackedDeepBridgeB" parent="." instance=ExtResource("15")]
+position = Vector2(2100, 1040)
+break_delay = 0.65
+respawn_delay = 2.8
+
+[node name="CrackedDeepBridgeC" parent="." instance=ExtResource("15")]
+position = Vector2(2520, 1040)
+break_delay = 0.65
+respawn_delay = 2.8
+
+[node name="StorySteleCore" parent="." instance=ExtResource("14")]
+position = Vector2(3720, 778)
+message_text = "锁链不是拖住巨人的。巨人，是压住锁链的人。"
+
 ; ─ 上层钟乳石廊道跳台（到达需要从中层连续跳高）──────────────
 [node name="UpperStepA" type="StaticBody2D" parent="."]
 position = Vector2(1100, 600)
@@ -333,19 +382,19 @@ position = Vector2(2800, 1060)
 [node name="SavePoint4" parent="." instance=ExtResource("7")]
 position = Vector2(3800, 760)
 
-; ─ 敌人 (11雪人 + 6炮台 = 17) ─────────────────────────────────
+; ─ 敌人（入口减压，深层维持高威胁）──────────────────────────────
 ; 中层入口段
 [node name="Snowman1" parent="." instance=ExtResource("4")]
-position = Vector2(350, 760)
+position = Vector2(520, 760)
 
 [node name="Snowman2" parent="." instance=ExtResource("4")]
-position = Vector2(600, 760)
+position = Vector2(820, 760)
 
 [node name="Turret1" parent="." instance=ExtResource("5")]
-position = Vector2(900, 758)
+position = Vector2(1080, 758)
 
 [node name="ArmoredIceBear1" parent="." instance=ExtResource("12")]
-position = Vector2(1180, 758)
+position = Vector2(1320, 758)
 
 ; 中层 B段
 [node name="Snowman3" parent="." instance=ExtResource("4")]

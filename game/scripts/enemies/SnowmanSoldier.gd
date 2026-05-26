@@ -4,15 +4,15 @@ const _HIT_EFFECT := preload("res://scenes/effects/HitEffect.tscn")
 const _STAGE_SCALING := preload("res://scripts/systems/EnemyStageScaling.gd")
 
 # ── Stats ──────────────────────────────────────────────────
-@export var max_hp: int = 80
-@export var attack_damage: int = 16
+@export var max_hp: int = 70
+@export var attack_damage: int = 12
 @export var move_speed: float = 85.0
-@export var chase_speed: float = 150.0
+@export var chase_speed: float = 135.0
 @export var gravity: float = 980.0
 @export var patrol_range: float = 130.0   # pixels from spawn
 @export var detect_range: float = 240.0   # aggro radius
-@export var attack_range: float = 65.0    # melee reach
-@export var attack_cooldown: float = 0.95
+@export var attack_range: float = 58.0    # melee reach
+@export var attack_cooldown: float = 1.05
 @export var exp_reward: int = 30
 @export var gold_min: int = 1
 @export var gold_max: int = 2

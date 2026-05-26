@@ -15,6 +15,9 @@
 [ext_resource type="PackedScene" path="res://scenes/systems/Shop.tscn" id="13"]
 [ext_resource type="PackedScene" path="res://scenes/systems/EquipmentGate.tscn" id="14"]
 [ext_resource type="PackedScene" path="res://scenes/enemies/IceCat.tscn" id="15"]
+[ext_resource type="PackedScene" path="res://scenes/systems/StoryStele.tscn" id="16"]
+[ext_resource type="PackedScene" path="res://scenes/systems/WindColumn.tscn" id="17"]
+[ext_resource type="PackedScene" path="res://scenes/systems/PaperNote.tscn" id="18"]
 
 ; ===================================================================
 ; 暴风雪高地 3800px x 1100px
@@ -98,7 +101,7 @@ points = PackedVector2Array(0, 0, 180, 0, 0, -380)
 [node name="BlizzardHighlands" type="Node2D"]
 script = ExtResource("2")
 cold_zone = true
-cold_damage_per_sec = 5
+cold_damage_per_sec = 3
 enemy_stage_multiplier = 2
 area_title = "暴风雪高地"
 
@@ -121,6 +124,37 @@ point_name = "FromIceCave"
 
 [node name="Player" parent="." instance=ExtResource("1")]
 position = Vector2(100, 820)
+
+[node name="BuriedWatchtower" type="Node2D" parent="."]
+position = Vector2(920, 820)
+z_index = -2
+
+[node name="TowerBody" type="Polygon2D" parent="BuriedWatchtower"]
+polygon = PackedVector2Array(-42, -156, 46, -164, 56, 8, -52, 8)
+color = Color(0.36, 0.31, 0.27, 0.82)
+
+[node name="TowerSnowCap" type="Polygon2D" parent="BuriedWatchtower"]
+polygon = PackedVector2Array(-62, -178, 62, -188, 84, -154, -48, -142)
+color = Color(0.86, 0.94, 1.0, 0.95)
+
+[node name="SignalFlagPole" type="Line2D" parent="BuriedWatchtower"]
+width = 3.0
+default_color = Color(0.18, 0.17, 0.16, 0.9)
+points = PackedVector2Array(36, -166, 36, -238)
+
+[node name="SignalFlag" type="Polygon2D" parent="BuriedWatchtower"]
+position = Vector2(62, -224)
+polygon = PackedVector2Array(-26, -10, 34, -4, 18, 18, -26, 10)
+color = Color(0.12, 0.44, 0.68, 0.82)
+
+[node name="StorySteleWindGate" parent="." instance=ExtResource("16")]
+position = Vector2(960, 842)
+message_text = "这些哨塔不是看远方的敌人。它们只看山顶的门，确认那口寒气还没有冲下来。"
+
+[node name="PaperNoteWindOutpost" parent="." instance=ExtResource("18")]
+position = Vector2(1480, 830)
+note_text = "风门锁的守卫还站着。\n如果他举盾，不要只砍他的盾。绕到风背后，山会替你给出一条短路。"
+signature_text = "—— 北岭守夜人"
 
 [node name="WallLeft" type="StaticBody2D" parent="."]
 position = Vector2(20, 500)
@@ -336,6 +370,21 @@ slot = 2
 level = 1
 label_text = "升级雪板"
 
+[node name="RidgeUpdraftA" parent="." instance=ExtResource("17")]
+position = Vector2(880, 690)
+lift_speed = -500.0
+horizontal_force = 65.0
+
+[node name="RidgeUpdraftB" parent="." instance=ExtResource("17")]
+position = Vector2(1960, 790)
+lift_speed = -540.0
+horizontal_force = -40.0
+
+[node name="StormCorridorUpdraft" parent="." instance=ExtResource("17")]
+position = Vector2(3040, 690)
+lift_speed = -560.0
+horizontal_force = 85.0
+
 ; ─ 存档点 ────────────────────────────────────────────────────────
 [node name="SavePoint1" parent="." instance=ExtResource("8")]
 position = Vector2(300, 840)
@@ -358,33 +407,27 @@ position = Vector2(1800, 840)
 [node name="SavePoint3" parent="." instance=ExtResource("8")]
 position = Vector2(3200, 840)
 
-; ─ 敌人 (8雪人 + 5炮台 + 2中层 = 15) ────────────────────────────
+; ─ 敌人（入口留出控风练习距离，后段逐步加压）──────────────────────
 [node name="Snowman1" parent="." instance=ExtResource("4")]
-position = Vector2(350, 840)
-
-[node name="Snowman2" parent="." instance=ExtResource("4")]
-position = Vector2(550, 840)
+position = Vector2(620, 840)
 
 [node name="Turret1" parent="." instance=ExtResource("5")]
-position = Vector2(900, 838)
+position = Vector2(1220, 838)
 
 [node name="IceCat1" parent="." instance=ExtResource("15")]
-position = Vector2(760, 840)
+position = Vector2(1020, 840)
 
 [node name="Snowman3" parent="." instance=ExtResource("4")]
-position = Vector2(1150, 838)
+position = Vector2(1460, 838)
 
 [node name="Snowman4" parent="." instance=ExtResource("4")]
-position = Vector2(1380, 838)
-
-[node name="Turret2" parent="." instance=ExtResource("5")]
-position = Vector2(1640, 838)
-
-[node name="IceCat2" parent="." instance=ExtResource("15")]
 position = Vector2(1760, 838)
 
-[node name="Snowman5" parent="." instance=ExtResource("4")]
-position = Vector2(1880, 838)
+[node name="Turret2" parent="." instance=ExtResource("5")]
+position = Vector2(2180, 838)
+
+[node name="IceCat2" parent="." instance=ExtResource("15")]
+position = Vector2(2380, 838)
 
 [node name="Turret3" parent="." instance=ExtResource("5")]
 position = Vector2(2100, 1018)

@@ -10,9 +10,9 @@ static func resolve_multiplier(node: Node) -> int:
 	if path.ends_with("BlizzardHighlands.tscn"):
 		return 2
 	if path.ends_with("IceCave.tscn"):
-		return 3
+		return 2
 	if path.ends_with("SnowyPeak.tscn"):
-		return 4
+		return 2
 	return 1
 
 static func _resolve_map_multiplier(node: Node) -> int:

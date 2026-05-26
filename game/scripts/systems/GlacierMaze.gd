@@ -3,11 +3,11 @@ extends "res://scripts/systems/BaseMap.gd"
 
 # 冰区定义：[x_min, x_max, friction]
 const ICE_ZONES: Array = [
-	[800.0,  1350.0, 22.0],   # 冰区A：入门级滑冰地板
-	[1700.0, 2300.0, 14.0],   # 冰区B：更滑，需控制冲量
-	[2700.0, 3200.0,  6.0],   # 冰区C：极滑深冰，最后考验
+	[800.0,  1350.0, 95.0],   # 冰区A：入门级滑冰地板
+	[1700.0, 2300.0, 72.0],   # 冰区B：更滑，需控制冲量
+	[2700.0, 3200.0, 52.0],   # 冰区C：极滑深冰，最后考验
 ]
-const DEFAULT_FRICTION: float = 120.0
+const DEFAULT_FRICTION: float = 170.0
 const _BOSS1_DEFEAT_QUOTE := "你踏过去的不是关隘，是一层层尚未醒透的锁。"
 
 @onready var _boss1: Node2D = $IceLynxBoss
@@ -41,8 +41,8 @@ func _configure_boss1_flow() -> void:
 	if is_instance_valid(_boss_room_trigger):
 		_boss_room_trigger.monitoring = true
 	_set_blizzard_portal_unlocked(false)
-	if is_instance_valid(_boss1):
-		_boss1.tree_exited.connect(_on_boss1_defeated, CONNECT_ONE_SHOT)
+	if is_instance_valid(_boss1) and _boss1.has_signal("defeated"):
+		_boss1.defeated.connect(_on_boss1_defeated, CONNECT_ONE_SHOT)
 
 func _set_blizzard_portal_unlocked(is_unlocked: bool) -> void:
 	if not is_instance_valid(_portal_to_blizzard):

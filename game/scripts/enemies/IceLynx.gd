@@ -2,30 +2,32 @@ extends CharacterBody2D
 # Boss 1 — 冰川雪豹
 # 高机动性：扑跳冲击 + 近战抓击，死亡掉落「平行式滑雪」技能
 
+signal defeated
+
 const _PLACEHOLDER_VISUALS := preload("res://scripts/systems/BossPlaceholderVisuals.gd")
 const _BOSS_ATTACK_TELEGRAPH := preload("res://scripts/systems/BossAttackTelegraph.gd")
 const _BOSS_REWARD_PICKUP_SCENE := preload("res://scenes/systems/BossRewardPickup.tscn")
 
 # ── Stats ──────────────────────────────────────────────────
-@export var max_hp: int = 1000
-@export var attack_damage: int = 20
-@export var pounce_damage: int = 40
-@export var move_speed: float = 114.0
-@export var pounce_speed: float = 220.0
+@export var max_hp: int = 780
+@export var attack_damage: int = 16
+@export var pounce_damage: int = 28
+@export var move_speed: float = 104.0
+@export var pounce_speed: float = 205.0
 @export var pounce_height: float = -440.0  # 初速度（负=向上）
 @export var gravity: float = 980.0
 @export var detect_range: float = 500.0
 @export var melee_range: float = 41.8
 @export var pounce_range_min: float = 0.0
 @export var pounce_range_max: float = 280.0
-@export var pounce_cooldown: float = 3.5
-@export var melee_cooldown: float = 1.8
+@export var pounce_cooldown: float = 3.8
+@export var melee_cooldown: float = 2.1
 @export var exp_reward: int = 1000
 @export var attack_reach: float = 30.8
 @export var attack_hitbox_size: Vector2 = Vector2(46.0, 35.2)
-@export var arena_half_width: float = 140.0
-@export var contact_damage: int = 30
-@export var contact_cooldown: float = 0.75
+@export var arena_half_width: float = 220.0
+@export var contact_damage: int = 14
+@export var contact_cooldown: float = 1.2
 @export var body_hitbox_size: Vector2 = Vector2(52.0, 42.0)
 @export var pounce_hitbox_size: Vector2 = Vector2(68.0, 52.8)
 @export var visual_scale: Vector2 = Vector2(1.14, 1.14)
@@ -105,18 +107,18 @@ func _apply_tuning() -> void:
 	_set_facing(1.0)
 
 func _phase2_threshold_hp() -> int:
-	return 600
+	return int(round(float(max_hp) * 0.55))
 
 func _enter_phase2() -> void:
 	_phase2 = true
-	pounce_cooldown = 2.2
-	pounce_speed = 242.0
+	pounce_cooldown = 3.0
+	pounce_speed = 225.0
 	if sprite != null:
 		var tween: Tween = create_tween()
 		tween.tween_property(sprite, "modulate", phase2_tint, 0.22)
 
 func _get_melee_damage() -> int:
-	return 30 if _phase2 else 20
+	return attack_damage + (6 if _phase2 else 0)
 
 func _get_pounce_damage() -> int:
 	return pounce_damage
@@ -207,8 +209,8 @@ func _physics_process(delta: float) -> void:
 			velocity.x = 0.0
 			if _telegraph != null:
 				_telegraph.show_forward(_pounce_dir if not is_zero_approx(_pounce_dir) else _facing, 132.0, "扑击", -26.0)
-			# 0.55s 蓄力后起跳
-			if _state_timer >= 0.55:
+			# 0.68s 蓄力后起跳
+			if _state_timer >= 0.68:
 				_set_facing(_pounce_dir)
 				velocity.x = _pounce_dir * pounce_speed
 				velocity.y = pounce_height
@@ -231,7 +233,7 @@ func _physics_process(delta: float) -> void:
 			velocity.x = 0.0
 			if _telegraph != null:
 				_telegraph.show_forward(_facing, 82.0, "爪击", -20.0)
-			if _state_timer >= 0.32:
+			if _state_timer >= 0.42:
 				attack_area.monitoring = true
 				_change_state(State.MELEE)
 
@@ -302,6 +304,7 @@ func _die() -> void:
 	GameManager.evolve()
 	_spawn_boss_rewards()
 	GameManager.on_enemy_killed()
+	defeated.emit()
 	var tween := create_tween()
 	tween.tween_property(self, "modulate:a", 0.0, 0.6)
 	tween.tween_callback(queue_free)

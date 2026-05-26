@@ -6,15 +6,17 @@ var hp: int = max_hp
 
 # ── Movement ───────────────────────────────────────────────
 @export var walk_speed: float = 190.0      # 仅用于空中横向控制上限
-@export var ski_accel: float = 440.0       # 地面加速度
-@export var ski_friction: float = 180.0    # 平地滑行减速度（冰雪摩擦）
-@export var air_friction: float = 45.0
+@export var ski_accel: float = 500.0       # 地面加速度
+@export var ski_friction: float = 220.0    # 平地滑行减速度（冰雪摩擦）
+@export var air_friction: float = 70.0
+@export var basic_brake_friction: float = 700.0
 @export var max_ski_speed: float = 620.0
 @export var jump_force: float = -540.0
 @export var gravity: float = 980.0
 @export var fall_damage_height_threshold: float = 300.0
 @export var fall_damage_divisor: float = 10.0
 @export var fall_damage_base: int = 10
+const _FALL_DAMAGE_MULTIPLIER: float = 0.5
 const _ICE_SURFACE_FRICTION_THRESHOLD: float = 60.0
 
 # ── Attack ─────────────────────────────────────────────────
@@ -36,7 +38,10 @@ const _EQUIPMENT_PICKUP_SCENE := preload("res://scenes/systems/EquipmentPickup.t
 
 # ── Hit / invincibility ────────────────────────────────────
 @export var invincible_duration: float = 1.2
-@export var knockback_force: float = 200.0
+@export var knockback_force: float = 140.0
+@export var knockback_vertical_force: float = -145.0
+@export var collision_knockback_multiplier: float = 0.45
+@export var collision_knockback_vertical_force: float = -80.0
 @export var log_damage_sources: bool = true
 var _invincible_timer: float = 0.0
 var _is_dead: bool = false
@@ -194,20 +199,25 @@ func _handle_movement(delta: float) -> void:
 		var fn := get_floor_normal()   # 地面法线，ny < 0（指向玩家）
 		var slope_x := absf(fn.x)      # 0 = 平地，越大坡越陡
 		
-		# 优先检查刹车（卡宾或平行式滑雪）
-		var is_braking: bool = false
+		# 优先检查刹车：未解锁技能时提供温和基础刹车，解锁后变成强刹车。
 		var can_carving_brake: bool = SkillManager.carving_all_surface_brake() \
 			and Input.is_action_pressed("brake") and _is_on_snow_or_ice_surface()
 		var can_parallel_brake: bool = SkillManager.parallel_brake_on_snow_only() \
 			and Input.is_action_pressed("brake") and _is_on_snow_surface()
+		var is_basic_braking: bool = Input.is_action_pressed("brake") \
+			and not can_carving_brake and not can_parallel_brake
 		
 		if can_carving_brake or can_parallel_brake:
-			is_braking = true
 			# 强制刹车：瞬间停止并持续保持0速度
 			velocity.x = 0.0
 			return
 
 		if slope_x > 0.08:   # 在斜坡上
+			if is_basic_braking:
+				velocity.x = move_toward(velocity.x, 0.0, (friction + basic_brake_friction * 0.65) * delta)
+				if absf(velocity.x) < 8.0:
+					velocity.x = 0.0
+				return
 			# 下坡切线：旋转 fn 使 Y > 0（指向屏幕下方 = 下坡）
 			var tangent := Vector2(-fn.y, fn.x)
 			if tangent.y < 0:
@@ -229,7 +239,9 @@ func _handle_movement(delta: float) -> void:
 				velocity.x = clamp(velocity.x, -max_ski_speed, max_ski_speed)
 		else:
 			# 平地：动量模型
-			if input_dir != 0:
+			if is_basic_braking:
+				velocity.x = move_toward(velocity.x, 0.0, (friction + basic_brake_friction) * delta)
+			elif input_dir != 0:
 				velocity.x = move_toward(velocity.x, input_dir * max_ski_speed, accel * delta)
 			else:
 				velocity.x = move_toward(velocity.x, 0.0, friction * delta)
@@ -254,6 +266,7 @@ func _apply_fall_damage_if_needed(fall_height: float) -> void:
 	if fall_height <= fall_damage_height_threshold:
 		return
 	var damage: int = maxi(1, int((fall_height - fall_damage_height_threshold) / fall_damage_divisor) + fall_damage_base)
+	damage = maxi(1, int(round(float(damage) * _FALL_DAMAGE_MULTIPLIER)))
 	var fall_reduction: float = EquipmentManager.fall_damage_reduction()
 	if fall_reduction > 0.0:
 		damage = maxi(1, int(round(float(damage) * (1.0 - fall_reduction))))
@@ -439,11 +452,8 @@ func take_damage(amount: int, hit_source_position: Vector2 = Vector2.ZERO, sourc
 	if not is_on_floor():
 		_airborne_peak_y = global_position.y
 
-	# Knockback away from damage source
 	if hit_source_position != Vector2.ZERO:
-		var dir: float = sign(global_position.x - hit_source_position.x)
-		velocity.x = dir * knockback_force * EquipmentManager.knockback_received_multiplier()
-		velocity.y = -200.0
+		_apply_damage_knockback(hit_source_position, source_name)
 
 	# Blink effect
 	_start_blink()
@@ -461,6 +471,21 @@ func _get_incoming_damage_value(amount: int, source_name: String) -> int:
 
 func _is_collision_damage_source(source_name: String) -> bool:
 	return source_name.contains("碰撞") or source_name.contains("冲撞")
+
+func _apply_damage_knockback(hit_source_position: Vector2, source_name: String) -> void:
+	var dir: float = sign(global_position.x - hit_source_position.x)
+	if is_zero_approx(dir):
+		dir = -float(_facing)
+	var equipment_mult: float = EquipmentManager.knockback_received_multiplier()
+	var is_collision_hit: bool = _is_collision_damage_source(source_name)
+	var force_mult: float = equipment_mult * (collision_knockback_multiplier if is_collision_hit else 1.0)
+	var target_x: float = dir * knockback_force * force_mult
+	if is_collision_hit:
+		velocity.x = clampf(velocity.x + target_x, -max_ski_speed * 0.7, max_ski_speed * 0.7)
+		velocity.y = minf(velocity.y, collision_knockback_vertical_force)
+		return
+	velocity.x = lerpf(velocity.x, target_x, 0.75)
+	velocity.y = minf(velocity.y, knockback_vertical_force)
 
 func _log_damage_source(amount: int, hit_source_position: Vector2, source_name: String) -> void:
 	if not log_damage_sources:

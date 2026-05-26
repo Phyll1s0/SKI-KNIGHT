@@ -19,6 +19,7 @@ const INPUT_GUARD_DURATION := 0.2
 
 func _ready() -> void:
 	get_tree().paused = false
+	quit_btn.visible = not OS.has_feature("web")
 	_set_menu_input_enabled(false)
 	_refresh_save_ui()
 	_start_title_animation()
@@ -65,6 +66,7 @@ func _on_start_pressed() -> void:
 	GameManager.has_goggles_part       = false
 	GameManager.has_ice_blade          = false
 	GameManager.respawn_position       = Vector2.ZERO
+	GameManager.respawn_scene          = ""
 	GameManager.story_flags.clear()
 	EquipmentManager.equipment_level[EquipmentManager.Slot.HELMET]    = 0
 	EquipmentManager.equipment_level[EquipmentManager.Slot.GOGGLES]   = 0
@@ -97,6 +99,8 @@ func _on_gamepad_pressed() -> void:
 		gamepad_settings.call("open_panel")
 
 func _on_quit_pressed() -> void:
+	if OS.has_feature("web"):
+		return
 	get_tree().quit()
 
 func _on_back_pressed() -> void:

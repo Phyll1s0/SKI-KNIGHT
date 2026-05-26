@@ -7,6 +7,7 @@ const MINIMAP_ICON_PATH := "res://assets/sprites/ui/minimap_icons.png"
 const MINIMAP_ICON_SIZE := Vector2(8.0, 8.0)
 const MAP_WIDTH := 180.0
 const MAP_HEIGHT := 120.0
+const EDGE_HINT_MARGIN := 7.0
 const SCALE_MIN := 0.04
 const SCALE_MAX := 0.14
 const SCALE_STEP := 0.01
@@ -17,12 +18,14 @@ var _points: Array[Dictionary] = []
 var _enemies: Array[Node2D] = []
 var _area_name: String = ""
 var _minimap_icon_sheet: Texture2D = null
+var _ui_font: Font = null
 
 @onready var panel: Panel = $Panel
 @onready var draw_area: Control = $Panel/DrawArea
 
 func _ready() -> void:
 	_minimap_icon_sheet = _load_optional_texture(MINIMAP_ICON_PATH)
+	_ui_font = SceneManager.get_ui_font()
 	draw_area.draw.connect(_on_draw)
 	KeybindManager.bindings_changed.connect(_on_bindings_changed)
 	call_deferred("_find_nodes")
@@ -81,6 +84,8 @@ func _collect_map_points() -> void:
 		_points.append({"pos": node.global_position, "color": Color(0.4, 1.0, 1.0, 1.0), "symbol": "K"})
 	for node in get_tree().get_nodes_in_group("shop"):
 		_points.append({"pos": node.global_position, "color": Color(1.0, 0.78, 0.0, 1.0), "symbol": "¥"})
+	for node in get_tree().get_nodes_in_group("story_point"):
+		_points.append({"pos": node.global_position, "color": Color(0.82, 0.92, 1.0, 1.0), "symbol": "!"})
 
 func _process(_delta: float) -> void:
 	draw_area.queue_redraw()
@@ -88,11 +93,13 @@ func _process(_delta: float) -> void:
 func _on_draw() -> void:
 	if not is_instance_valid(_player):
 		return
+	if _ui_font == null:
+		return
 
 	var origin := _player.global_position
 	var cx := MAP_WIDTH * 0.5
 	var cy := MAP_HEIGHT * 0.5
-	var font: Font = ThemeDB.fallback_font
+	var font: Font = _ui_font
 
 	draw_area.draw_rect(Rect2(Vector2.ZERO, Vector2(MAP_WIDTH, MAP_HEIGHT)), Color(0.04, 0.05, 0.14, 0.88))
 
@@ -106,16 +113,9 @@ func _on_draw() -> void:
 	for point: Dictionary in _points:
 		var point_pos: Vector2 = Vector2(cx, cy) + (point["pos"] - origin) * _minimap_scale
 		if not _in_bounds(point_pos):
+			_draw_edge_hint(point_pos, point["color"])
 			continue
-		var tint: Color = point["color"]
-		draw_area.draw_circle(point_pos, 6.0, Color(tint.r, tint.g, tint.b, 0.2))
-		if point.has("icon") and _minimap_icon_sheet != null:
-			_draw_minimap_icon(int(point["icon"]), point_pos)
-		else:
-			draw_area.draw_circle(point_pos, 4.5, tint)
-			var symbol: String = point["symbol"]
-			var text_width := font.get_string_size(symbol, HORIZONTAL_ALIGNMENT_LEFT, -1, 9).x
-			draw_area.draw_string(font, Vector2(point_pos.x - text_width * 0.5, point_pos.y + 3.5), symbol, HORIZONTAL_ALIGNMENT_LEFT, -1, 9, Color.BLACK)
+		_draw_map_point(point, point_pos, font)
 
 	draw_area.draw_circle(Vector2(cx, cy), 5.5, Color(1.0, 1.0, 1.0, 0.25))
 	if _minimap_icon_sheet != null:
@@ -151,6 +151,32 @@ func _draw_minimap_icon(icon_index: int, center: Vector2) -> void:
 	var source_rect := Rect2(Vector2(icon_index * MINIMAP_ICON_SIZE.x, 0.0), MINIMAP_ICON_SIZE)
 	var target_rect := Rect2(center - MINIMAP_ICON_SIZE * 0.5, MINIMAP_ICON_SIZE)
 	draw_area.draw_texture_rect_region(_minimap_icon_sheet, target_rect, source_rect)
+
+func _draw_map_point(point: Dictionary, point_pos: Vector2, font: Font) -> void:
+	var tint: Color = point["color"]
+	draw_area.draw_circle(point_pos, 6.0, Color(tint.r, tint.g, tint.b, 0.2))
+	if point.has("icon") and _minimap_icon_sheet != null:
+		_draw_minimap_icon(int(point["icon"]), point_pos)
+		return
+	draw_area.draw_circle(point_pos, 4.5, tint)
+	var symbol: String = point["symbol"]
+	var text_width := font.get_string_size(symbol, HORIZONTAL_ALIGNMENT_LEFT, -1, 9).x
+	draw_area.draw_string(font, Vector2(point_pos.x - text_width * 0.5, point_pos.y + 3.5), symbol, HORIZONTAL_ALIGNMENT_LEFT, -1, 9, Color.BLACK)
+
+func _draw_edge_hint(point_pos: Vector2, tint: Color) -> void:
+	var edge_pos := Vector2(
+		clampf(point_pos.x, EDGE_HINT_MARGIN, MAP_WIDTH - EDGE_HINT_MARGIN),
+		clampf(point_pos.y, EDGE_HINT_MARGIN, MAP_HEIGHT - EDGE_HINT_MARGIN)
+	)
+	draw_area.draw_colored_polygon(
+		PackedVector2Array([
+			edge_pos + Vector2(0.0, -4.0),
+			edge_pos + Vector2(4.0, 0.0),
+			edge_pos + Vector2(0.0, 4.0),
+			edge_pos + Vector2(-4.0, 0.0)
+		]),
+		Color(tint.r, tint.g, tint.b, 0.72)
+	)
 
 func _in_bounds(pos: Vector2) -> bool:
 	return pos.x >= 0.0 and pos.x <= MAP_WIDTH and pos.y >= 0.0 and pos.y <= MAP_HEIGHT

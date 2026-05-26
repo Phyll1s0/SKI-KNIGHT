@@ -18,6 +18,7 @@ var _did_pause_tree: bool = false
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
+	add_to_group("story_point")
 	set_collision_mask_value(1, false)
 	set_collision_mask_value(2, true)
 	prompt_label.visible = false
@@ -47,8 +48,6 @@ func _refresh_input_hints() -> void:
 	]
 
 func _apply_note_font_overrides() -> void:
-	if ThemeDB.fallback_font == null:
-		return
 	title_label.add_theme_font_override("font", _make_font_variation(2))
 	prompt_label.add_theme_font_override("font", _make_font_variation(1))
 	body_label.add_theme_font_override("font", _make_font_variation(1))
@@ -56,8 +55,9 @@ func _apply_note_font_overrides() -> void:
 	close_tip.add_theme_font_override("font", _make_font_variation(1))
 
 func _make_font_variation(glyph_spacing: int) -> FontVariation:
+	var base_font: Font = SceneManager.get_ui_font()
 	var font := FontVariation.new()
-	font.base_font = ThemeDB.fallback_font
+	font.base_font = base_font
 	font.spacing_glyph = glyph_spacing
 	return font
 

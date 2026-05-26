@@ -5,10 +5,10 @@ const _PLACEHOLDER_VISUALS := preload("res://scripts/systems/BossPlaceholderVisu
 const _STAGE_SCALING := preload("res://scripts/systems/EnemyStageScaling.gd")
 
 @export var max_hp: int = 120
-@export var swipe_damage: int = 20
-@export var charge_damage: int = 28
+@export var swipe_damage: int = 16
+@export var charge_damage: int = 24
 @export var move_speed: float = 62.0
-@export var charge_speed: float = 320.0
+@export var charge_speed: float = 285.0
 @export var gravity: float = 980.0
 @export var patrol_range: float = 110.0
 @export var detect_range: float = 360.0
@@ -95,7 +95,7 @@ func _physics_process(delta: float) -> void:
 			_do_chase()
 		State.CHARGE_WINDUP:
 			velocity.x = 0.0
-			if _state_timer >= 0.35:
+			if _state_timer >= 0.45:
 				var dir: float = 1.0 if not is_instance_valid(_player) else sign(_player.global_position.x - global_position.x)
 				charge_area.monitoring = true
 				velocity.x = dir * charge_speed

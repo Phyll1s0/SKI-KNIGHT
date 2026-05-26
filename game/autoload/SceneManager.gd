@@ -11,11 +11,15 @@ const STORY_QUOTE_DURATION := 5.0
 const STORY_QUOTE_FADE_DURATION := 0.45
 const STORY_QUOTE_FONT_SIZE := 34
 const STORY_QUOTE_GLYPH_SPACING := 2
+const UI_FONT_PATH := "res://assets/fonts/NotoSansCJKsc-Regular.otf"
+const UI_DEFAULT_FONT_SIZE := 16
 
 var _target_scene: String = ""
 var _spawn_point_name: String = "DefaultSpawn"
 var _is_transitioning: bool = false
 var _is_showing_story_quote: bool = false
+var _ui_font: Font = null
+var _ui_theme: Theme = null
 
 # 运行时创建的遮罩节点（避免依赖外部 .tscn）
 var _overlay: ColorRect = null
@@ -24,6 +28,10 @@ var _story_label: Label = null
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
+	_ensure_global_ui_theme()
+	if not get_tree().node_added.is_connected(_on_tree_node_added):
+		get_tree().node_added.connect(_on_tree_node_added)
+	call_deferred("_refresh_tree_ui_theme")
 	_canvas = CanvasLayer.new()
 	_canvas.layer = 100
 	_canvas.process_mode = Node.PROCESS_MODE_ALWAYS
@@ -69,6 +77,7 @@ func go_to(scene_path: String, spawn_point: String = "DefaultSpawn") -> void:
 	get_tree().change_scene_to_file(_target_scene)
 	await get_tree().process_frame               # 等新场景的 _ready 执行完
 	await get_tree().process_frame
+	_refresh_tree_ui_theme()
 	await _fade(1.0, 0.0)                         # 淡入 → 正常
 	_is_transitioning = false
 	scene_transition_finished.emit()
@@ -83,6 +92,11 @@ func get_spawn_point_name() -> String:
 
 func is_transitioning() -> bool:
 	return _is_transitioning
+
+func get_ui_font() -> Font:
+	if _ui_font == null:
+		_ui_font = load(UI_FONT_PATH) as Font
+	return _ui_font
 
 func show_story_quote(text: String, total_duration: float = STORY_QUOTE_DURATION) -> void:
 	if _is_transitioning or _is_showing_story_quote:
@@ -128,9 +142,40 @@ func _fade_story_label(from_alpha: float, to_alpha: float, duration: float) -> v
 
 func _apply_story_quote_style() -> void:
 	_story_label.add_theme_font_size_override("font_size", STORY_QUOTE_FONT_SIZE)
-	if ThemeDB.fallback_font == null:
+	var base_font: Font = get_ui_font()
+	if base_font == null:
 		return
 	var spaced_font := FontVariation.new()
-	spaced_font.base_font = ThemeDB.fallback_font
+	spaced_font.base_font = base_font
 	spaced_font.spacing_glyph = STORY_QUOTE_GLYPH_SPACING
 	_story_label.add_theme_font_override("font", spaced_font)
+
+func _ensure_global_ui_theme() -> void:
+	var tree := get_tree()
+	if tree == null or tree.root == null:
+		return
+	if _ui_theme == null:
+		var base_font: Font = get_ui_font()
+		if base_font == null:
+			return
+		_ui_theme = Theme.new()
+		_ui_theme.default_font = base_font
+		_ui_theme.default_font_size = UI_DEFAULT_FONT_SIZE
+	tree.root.theme = _ui_theme
+
+func _refresh_tree_ui_theme() -> void:
+	var tree := get_tree()
+	if tree == null or tree.root == null or _ui_theme == null:
+		return
+	_apply_ui_theme_to_branch(tree.root)
+
+func _apply_ui_theme_to_branch(node: Node) -> void:
+	if node is Control and (node as Control).theme == null:
+		(node as Control).theme = _ui_theme
+	for child in node.get_children():
+		_apply_ui_theme_to_branch(child)
+
+func _on_tree_node_added(node: Node) -> void:
+	if _ui_theme == null:
+		return
+	_apply_ui_theme_to_branch(node)

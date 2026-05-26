@@ -6,9 +6,9 @@ const _STAGE_SCALING := preload("res://scripts/systems/EnemyStageScaling.gd")
 # 冰球炮台：固定位置，朝玩家方向定时发射冰球弹丸
 # 帧定义：0=idle  1=charge（充能）  2=fire（开火）  3=dead（破损）
 
-@export var max_hp: int = 60
-@export var attack_damage: int = 15
-@export var fire_interval: float = 1.65   # 发射间隔（秒）
+@export var max_hp: int = 55
+@export var attack_damage: int = 12
+@export var fire_interval: float = 1.9   # 发射间隔（秒）
 @export var detect_range: float = 380.0  # 探测距离
 @export var contact_cooldown: float = 0.8
 @export var exp_reward: int = 20
@@ -21,7 +21,7 @@ const FRAME_CHARGE := 1
 const FRAME_FIRE   := 2
 const FRAME_DEAD   := 3
 
-const CHARGE_DURATION := 0.45   # 充能持续时间（秒）
+const CHARGE_DURATION := 0.52   # 充能持续时间（秒）
 const FIRE_DURATION   := 0.18   # 开火帧停留时间
 
 var hp: int = max_hp

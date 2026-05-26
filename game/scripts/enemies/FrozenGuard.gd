@@ -7,10 +7,10 @@ const _BOSS_ATTACK_TELEGRAPH := preload("res://scripts/systems/BossAttackTelegra
 const _BOSS_REWARD_PICKUP_SCENE := preload("res://scenes/systems/BossRewardPickup.tscn")
 
 # ── Stats ──────────────────────────────────────────────────
-@export var max_hp: int = 820
-@export var march_damage: int = 20
-@export var spin_damage: int = 28
-@export var slam_damage: int = 46
+@export var max_hp: int = 760
+@export var march_damage: int = 16
+@export var spin_damage: int = 24
+@export var slam_damage: int = 38
 @export var march_speed: float = 62.0
 @export var gravity: float = 980.0
 @export var detect_range: float = 500.0
@@ -19,10 +19,10 @@ const _BOSS_REWARD_PICKUP_SCENE := preload("res://scenes/systems/BossRewardPicku
 @export var spin_cooldown: float = 4.8
 @export var slam_cooldown: float = 6.5
 @export var exp_reward: int = 380
-@export var contact_damage: int = 18
-@export var contact_cooldown: float = 0.8
-@export var shield_bash_damage: int = 26
-@export var shield_bash_speed: float = 240.0
+@export var contact_damage: int = 12
+@export var contact_cooldown: float = 1.15
+@export var shield_bash_damage: int = 22
+@export var shield_bash_speed: float = 210.0
 @export var shield_bash_cooldown: float = 4.6
 
 var hp: int = max_hp
@@ -120,7 +120,7 @@ func _physics_process(delta: float) -> void:
 			velocity.x = 0.0
 			if _telegraph != null:
 				_telegraph.show_zone(190.0, "旋斩", -2.0)
-			if _state_timer >= 0.68:
+			if _state_timer >= 0.78:
 				spin_area.monitoring = true
 				_change_state(State.SPINNING)
 
@@ -135,7 +135,7 @@ func _physics_process(delta: float) -> void:
 			velocity.x = 0.0
 			if _telegraph != null:
 				_telegraph.show_zone(250.0, "跳砸", 18.0)
-			if _state_timer >= 0.55:
+			if _state_timer >= 0.68:
 				velocity.y = -580.0
 				_change_state(State.SLAM_AIR)
 
@@ -155,7 +155,7 @@ func _physics_process(delta: float) -> void:
 			velocity.x = 0.0
 			if _telegraph != null:
 				_telegraph.show_forward(_facing, 140.0, "盾击", -8.0)
-			if _state_timer >= 0.42:
+			if _state_timer >= 0.52:
 				velocity.x = _facing * shield_bash_speed
 				_change_state(State.BASHING)
 

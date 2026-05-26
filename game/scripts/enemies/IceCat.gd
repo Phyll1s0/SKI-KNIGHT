@@ -5,11 +5,11 @@ const _PLACEHOLDER_VISUALS := preload("res://scripts/systems/BossPlaceholderVisu
 const _STAGE_SCALING := preload("res://scripts/systems/EnemyStageScaling.gd")
 
 @export var max_hp: int = 56
-@export var slash_damage: int = 12
-@export var pounce_damage: int = 18
+@export var slash_damage: int = 10
+@export var pounce_damage: int = 14
 @export var move_speed: float = 125.0
-@export var chase_speed: float = 220.0
-@export var pounce_speed: float = 380.0
+@export var chase_speed: float = 195.0
+@export var pounce_speed: float = 340.0
 @export var pounce_height: float = -280.0
 @export var gravity: float = 980.0
 @export var patrol_range: float = 150.0
@@ -100,7 +100,7 @@ func _physics_process(delta: float) -> void:
 			_do_chase()
 		State.POUNCE_WINDUP:
 			velocity.x = 0.0
-			if _state_timer >= 0.2:
+			if _state_timer >= 0.32:
 				var dir: float = 1.0 if not is_instance_valid(_player) else sign(_player.global_position.x - global_position.x)
 				velocity.x = dir * pounce_speed
 				velocity.y = pounce_height

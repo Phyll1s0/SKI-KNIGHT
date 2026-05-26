@@ -5,9 +5,9 @@ const _ACT3_ENTRY_FLAG := "blizzard_highlands_entry_quote"
 const _ACT3_ENTRY_QUOTE := "前面的区域以后再来探索吧"
 
 # 强风参数
-@export var wind_force: float = 180.0      # 水平风力（像素/秒²）
+@export var wind_force: float = 105.0      # 水平风力（像素/秒²）
 @export var wind_direction: float = 1.0    # 1.0=向右, -1.0=向左
-@export var wind_gust_interval: float = 6.0 # 阵风切换间隔（秒）
+@export var wind_gust_interval: float = 7.5 # 阵风切换间隔（秒）
 
 var _wind_timer: float = 0.0
 
@@ -34,16 +34,16 @@ func _apply_wind(delta: float) -> void:
 	if not is_instance_valid(_player):
 		return
 	# 根据玩家 x 位置计算风区强度
-	# x<400 = 峡谷入口（弱风×0.25），400-1400 = 斜坡风道（×1.0），
-	# 1400-2600 = 裸露山脊（×1.4），2600+ = 暴风走廊（×1.7）
+	# x<400 = 峡谷入口（弱风×0.2），400-1400 = 斜坡风道（×0.75），
+	# 1400-2600 = 裸露山脊（×1.0），2600+ = 暴风走廊（×1.15）
 	var px: float = _player.global_position.x
-	var zone_mult: float = 0.25
+	var zone_mult: float = 0.2
 	if px > 2600.0:
-		zone_mult = 1.7
+		zone_mult = 1.15
 	elif px > 1400.0:
-		zone_mult = 1.4
-	elif px > 400.0:
 		zone_mult = 1.0
+	elif px > 400.0:
+		zone_mult = 0.75
 	var input_dir: float = Input.get_axis("move_left", "move_right")
 	var resistance: float = 0.4 if input_dir * wind_direction < 0 else 1.0
 	_player.velocity.x += wind_force * wind_direction * resistance * zone_mult * delta

@@ -1,9 +1,40 @@
+# OS / editor noise
+.DS_Store
+*.swp
+*.swo
+*~
+
+# Local notes
 temp.txt
-todolist.txt
-design.md
-goal.md
-required.md
-enemy.md
 share_to_friend.md
+design.md
+enemy.md
+goal.md
 player.md
 plot.md
+required.md
+todolist.txt
+
+# Local design / art-production docs
+game/WEB_EXPORT.md
+game/assets/ART_ASSET_INTERFACE.md
+game/assets/art_prompts/
+
+# Godot generated cache
+game/.godot/
+game/.import/
+game/.mono/
+
+# Exported builds and packaged artifacts
+game/build/
+*.pck
+*.exe
+*.zip
+*.dmg
+*.app
+
+# Logs and temporary files
+*.log
+*.tmp
+*.bak
+*.bak[0-9]*
